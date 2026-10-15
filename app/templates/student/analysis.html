@@ -1,0 +1,603 @@
+{% extends 'student/base.html' %}
+{% block title %}综合数据看板 - 校园综合管理系统{% endblock %}
+{% block content %}
+<!-- 学生信息卡片 -->
+<div class="dashboard-header layui-card" style="margin-bottom:24px;background:linear-gradient(135deg,#16baaa,#0ea5e9);color:#fff;">
+    <div class="layui-card-body" id="student-info-card" style="display:flex;align-items:center;gap:32px;">
+        <div class="avatar" id="student-avatar" style="width:64px;height:64px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;font-weight:bold;border:3px solid rgba(255,255,255,0.3);">学</div>
+        <div style="flex:1;">
+            <div id="student-info-main" style="font-size:20px;font-weight:bold;margin-bottom:4px;"></div>
+            <div id="student-info-extra" style="color:rgba(255,255,255,0.8);font-size:14px;"></div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:12px;opacity:0.8;">学生端</div>
+            <div style="font-size:16px;font-weight:bold;">成绩分析</div>
+        </div>
+    </div>
+</div>
+
+<!-- 关键指标卡片 -->
+<div class="dashboard-metrics" style="display:flex;gap:20px;margin-bottom:32px;flex-wrap:wrap;">
+    <div class="metric-card" id="gpa-card">
+        <div class="metric-icon" style="background:#16baaa;">📊</div>
+        <div class="metric-content">
+            <div class="metric-label">学分绩</div>
+            <div class="metric-value" id="gpa-value">-</div>
+        </div>
+    </div>
+    <div class="metric-card" id="pass-card">
+        <div class="metric-icon" style="background:#52c41a;">✅</div>
+        <div class="metric-content">
+            <div class="metric-label">必修通过率</div>
+            <div class="metric-value" id="pass-value">-</div>
+        </div>
+    </div>
+    <div class="metric-card" id="elective-card">
+        <div class="metric-icon" style="background:#1890ff;">📚</div>
+        <div class="metric-content">
+            <div class="metric-label">选修通过率</div>
+            <div class="metric-value" id="elective-value">-</div>
+        </div>
+    </div>
+    <div class="metric-card" id="fail-card">
+        <div class="metric-icon" style="background:#f5222d;">⚠️</div>
+        <div class="metric-content">
+            <div class="metric-label">挂科数</div>
+            <div class="metric-value" id="fail-value">-</div>
+        </div>
+    </div>
+    <div class="metric-card" id="higher-card">
+        <div class="metric-icon" style="background:#faad14;display:flex;align-items:center;justify-content:center;">🏆</div>
+        <div class="metric-content">
+            <div class="metric-label">高于平均分</div>
+            <div class="metric-value" id="higher-value">-</div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="dashboard-charts" style="display:flex;flex-wrap:wrap;gap:24px;margin-bottom:32px;">
+    <div class="chart-container" style="flex:1 1 400px;min-width:350px;">
+        <div class="chart-card">
+            <div class="chart-title">各科成绩雷达图</div>
+            <div id="radarChart" style="width:100%;height:350px;"></div>
+        </div>
+    </div>
+    <div class="chart-container" style="flex:1 1 400px;min-width:350px;">
+        <div class="chart-card">
+            <div class="chart-title">成绩趋势图</div>
+            <div id="trendChart" style="width:100%;height:350px;"></div>
+        </div>
+    </div>
+    <div class="chart-container" style="flex:1 1 400px;min-width:350px;">
+        <div class="chart-card">
+            <div class="chart-title">成绩分布饼图</div>
+            <div id="pieChart" style="width:100%;height:350px;"></div>
+        </div>
+    </div>
+    <div class="chart-container" style="flex:1 1 400px;min-width:350px;">
+        <div class="chart-card">
+            <div class="chart-title">各课程与平均分对比</div>
+            <div id="barChart" style="width:100%;height:350px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 详细成绩表格 -->
+<div class="dashboard-table layui-card">
+    <div class="layui-card-header" style="font-size:16px;font-weight:bold;color:#333;">
+        <i class="layui-icon layui-icon-list" style="margin-right:8px;"></i>详细成绩表
+    </div>
+    <div class="layui-card-body" style="padding:0;">
+        <div class="table-responsive">
+            <table class="layui-table" id="analysis-table" style="margin:0;">
+                <thead>
+                    <tr style="background:#fafafa;">
+                        <th style="font-weight:bold;color:#333;">课程名称</th>
+                        <th style="font-weight:bold;color:#333;">课程类型</th>
+                        <th style="font-weight:bold;color:#333;">学分</th>
+                        <th style="font-weight:bold;color:#333;">分数</th>
+                        <th style="font-weight:bold;color:#333;">平均分</th>
+                        <th style="font-weight:bold;color:#333;">高于平均分</th>
+                        <th style="font-weight:bold;color:#333;">通过/挂科</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 指标卡片样式 */
+.metric-card {
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    padding:20px;
+    flex:1 1 180px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    transition:all 0.3s ease;
+    border:1px solid #f0f0f0;
+}
+
+.metric-card:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width:48px;
+    height:48px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    color:#fff;
+    flex-shrink:0;
+}
+
+.metric-content {
+    flex:1;
+}
+
+.metric-label {
+    color:#666;
+    font-size:13px;
+    margin-bottom:4px;
+    font-weight:500;
+}
+
+.metric-value {
+    font-size:24px;
+    font-weight:bold;
+    color:#333;
+    line-height:1.2;
+}
+
+/* 图表卡片样式 */
+.chart-card {
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    padding:20px;
+    height:100%;
+    border:1px solid #f0f0f0;
+}
+
+.chart-title {
+    font-size:16px;
+    font-weight:bold;
+    color:#333;
+    margin-bottom:16px;
+    text-align:center;
+    padding-bottom:12px;
+    border-bottom:2px solid #f0f0f0;
+}
+
+/* 表格响应式 */
+.table-responsive {
+    overflow-x:auto;
+    border-radius:8px;
+}
+
+.layui-table {
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.layui-table th {
+    background:#fafafa !important;
+    font-weight:bold !important;
+    color:#333 !important;
+    border-bottom:2px solid #e8e8e8;
+}
+
+.layui-table td {
+    border-bottom:1px solid #f0f0f0;
+    padding:12px 8px;
+}
+
+/* 状态标签样式 */
+.status-pass {
+    background:#f6ffed;
+    color:#52c41a;
+    padding:4px 8px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:500;
+    border:1px solid #b7eb8f;
+}
+
+.status-fail {
+    background:#fff2f0;
+    color:#f5222d;
+    padding:4px 8px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:500;
+    border:1px solid #ffccc7;
+}
+
+.status-higher {
+    color:#52c41a;
+    font-weight:500;
+}
+
+.status-lower {
+    color:#f5222d;
+    font-weight:500;
+}
+
+/* 挂科行高亮 */
+.row-fail {
+    background:#fff2f0 !important;
+}
+
+.row-excellent {
+    background:#f6ffed !important;
+}
+
+/* 移动端适配 */
+@media (max-width:768px) {
+    .dashboard-metrics {
+        flex-direction:column;
+    }
+    
+    .metric-card {
+        flex:none;
+    }
+    
+    .chart-container {
+        flex:1 1 100%;
+        min-width:100%;
+    }
+    
+    .dashboard-header .layui-card-body {
+        flex-direction:column;
+        text-align:center;
+        gap:16px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block custom_js %}
+<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+<script>
+layui.use(['jquery'], function(){
+    var $ = layui.$;
+    
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+    
+    // 学生信息卡片
+    $.ajax({
+        url: '/student/api/profile',
+        type: 'GET',
+        headers: getAuthHeaders(),
+        dataType: 'json',
+        success: function(res) {
+            if(res.code === 0) {
+                var d = res.data;
+                $('#student-info-main').text(d.name + '（' + d.student_id + '）');
+                $('#student-info-extra').text(d.major + ' | ' + (d.class_name||'') + ' | 生源地：' + (d.hometown||'-'));
+                // 修复头像显示 - 显示学生姓名首字符
+                $('#student-avatar').text(d.name ? d.name.charAt(0) : '学');
+            }
+        }
+    });
+    
+    // 综合分析数据
+    $.ajax({
+        url: '/student/api/analysis_data',
+        type: 'GET',
+        headers: getAuthHeaders(),
+        dataType: 'json',
+        success: function(res) {
+            if(res.code === 0) {
+                var d = res.data;
+                
+                // 更新指标卡片 - 我的平均分保留一位小数
+                $('#gpa-value').text(d.gpa !== null ? d.gpa.toFixed(1) : '-');
+                var pass = d.analysis.filter(a=>a.type==='必修'&&a.score!=null&&a.score>=60).length;
+                var total = d.analysis.filter(a=>a.type==='必修').length;
+                $('#pass-value').text(total>0 ? Math.round(pass/total*100)+'%' : '-');
+                var epass = d.elective_pass, efail = d.elective_fail, etotal = epass+efail;
+                $('#elective-value').text(etotal>0 ? Math.round(epass/etotal*100)+'%' : '-');
+                $('#fail-value').text(d.fail_count);
+                var higher = d.analysis.filter(a=>a.higher_than_avg).length;
+                $('#higher-value').text(higher+'门');
+                
+                // 详细成绩表
+                var html = '';
+                d.analysis.forEach(function(a){
+                    var isPass = (a.score!=null&&a.score>=60);
+                    var isExcellent = (a.score!=null&&a.score>=90);
+                    var rowClass = '';
+                    if(a.score!=null&&a.score<60) rowClass = 'row-fail';
+                    else if(isExcellent) rowClass = 'row-excellent';
+                    
+                    var passText = (a.type==='必修' ? (isPass?'通过':'挂科') : (isPass?'通过':'未通过'));
+                    var passClass = isPass ? 'status-pass' : 'status-fail';
+                    var higherClass = a.higher_than_avg ? 'status-higher' : 'status-lower';
+                    var higherText = a.higher_than_avg ? '是' : '否';
+                    
+                    html += '<tr class="'+rowClass+'">' +
+                        '<td style="font-weight:500;">' + a.name + '</td>' +
+                        '<td>' + a.type + '</td>' +
+                        '<td>' + a.credits + '</td>' +
+                        '<td style="font-weight:bold;color:'+(isPass?'#52c41a':'#f5222d')+'">' + (a.score != null ? a.score : '-') + '</td>' +
+                        '<td>' + (a.avg != null ? a.avg.toFixed(1) : '-') + '</td>' +
+                        '<td><span class="'+higherClass+'">'+higherText+'</span></td>' +
+                        '<td><span class="'+passClass+'">'+passText+'</span></td>' +
+                        '</tr>';
+                });
+                $('#analysis-table tbody').html(html);
+                
+                // 图表数据
+                var radarNames = d.analysis.map(a=>a.name);
+                var radarScores = d.analysis.map(a=>a.score||0);
+                var trendX = d.analysis.map(a=>a.name);
+                var trendY = d.analysis.map(a=>a.score||0);
+                var pieData = [
+                    {name:'优秀(90-100)',value:d.analysis.filter(a=>a.score>=90).length},
+                    {name:'良好(75-89)',value:d.analysis.filter(a=>a.score>=75&&a.score<90).length},
+                    {name:'及格(60-74)',value:d.analysis.filter(a=>a.score>=60&&a.score<75).length},
+                    {name:'不及格(<60)',value:d.analysis.filter(a=>a.score!=null&&a.score<60).length}
+                ];
+                var barX = d.analysis.map(a=>a.name);
+                var barMy = d.analysis.map(a=>a.score||0);
+                var barAvg = d.analysis.map(a=>a.avg ? parseFloat(a.avg.toFixed(1)) : 0);
+                
+                // 1. 雷达图优化
+                echarts.init(document.getElementById('radarChart')).setOption({
+                    title: { 
+                        text: '各科成绩雷达图', 
+                        left: 'center', 
+                        top: 10, 
+                        textStyle: { fontSize: 18, fontWeight: 700, color: '#333' } 
+                    },
+                    radar: {
+                        indicator: radarNames.map(function(name){
+                            return {name: name, max: 100};
+                        }),
+                        name: { 
+                            color: '#333', 
+                            fontWeight: 'bold', 
+                            fontSize: 14 
+                        },
+                        splitArea: { 
+                            areaStyle: { 
+                                color: ['#e6f7ff', '#fff'] 
+                            } 
+                        },
+                        center: ['50%', '60%'],
+                        radius: '65%'
+                    },
+                    series: [{
+                        name: '成绩',
+                        type: 'radar',
+                        data: [{ value: radarScores, name: '成绩' }],
+                        areaStyle: { 
+                            color: 'rgba(22,186,170,0.3)' 
+                        },
+                        lineStyle: { 
+                            color: '#16baaa', 
+                            width: 3 
+                        },
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        itemStyle: { 
+                            color: '#faad14', 
+                            borderColor: '#16baaa', 
+                            borderWidth: 2 
+                        }
+                    }]
+                });
+                
+                // 2. 趋势图优化
+                echarts.init(document.getElementById('trendChart')).setOption({
+                    title: { 
+                        text: '成绩趋势图', 
+                        left: 'center', 
+                        top: 10, 
+                        textStyle: { fontSize: 18, fontWeight: 700, color: '#333' } 
+                    },
+                    tooltip: { 
+                        trigger: 'axis',
+                        formatter: function(params) {
+                            return params[0].name + '<br/>' + 
+                                   params[0].seriesName + ': ' + params[0].value + '分';
+                        }
+                    },
+                    xAxis: { 
+                        type: 'category', 
+                        data: trendX,
+                        axisLabel: { 
+                            rotate: 45,
+                            fontSize: 12,
+                            color: '#666'
+                        }
+                    },
+                    yAxis: { 
+                        type: 'value', 
+                        min: 0, 
+                        max: 100,
+                        axisLabel: { color: '#666' }
+                    },
+                    series: [{ 
+                        name: '分数', 
+                        type: 'line', 
+                        data: trendY, 
+                        smooth: true, 
+                        lineStyle: { color: '#16baaa', width: 3 },
+                        itemStyle: { color: '#16baaa' },
+                        areaStyle: { color: 'rgba(22,186,170,0.1)' },
+                        label: { 
+                            show: true, 
+                            position: 'top',
+                            color: '#333',
+                            fontSize: 12
+                        } 
+                    }]
+                });
+                
+                // 3. 饼图优化 - 添加中心信息显示
+                echarts.init(document.getElementById('pieChart')).setOption({
+                    title: { 
+                        text: '成绩分布饼图', 
+                        left: 'center', 
+                        top: 10, 
+                        textStyle: { fontSize: 18, fontWeight: 700, color: '#333' } 
+                    },
+                    tooltip: { 
+                        trigger: 'item', 
+                        formatter: '{a} <br/>{b}: {c}门 ({d}%)' 
+                    },
+                    legend: { 
+                        orient: 'horizontal', 
+                        bottom: 10, 
+                        left: 'center', 
+                        itemWidth: 18, 
+                        itemHeight: 18, 
+                        textStyle: { fontSize: 12, color: '#666' } 
+                    },
+                    series: [{
+                        name: '分数段',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['50%', '55%'],
+                        data: pieData,
+                        itemStyle: {
+                            borderRadius: 5, 
+                            borderColor: '#fff', 
+                            borderWidth: 2,
+                            color: function(params){
+                                const colors = {
+                                    '优秀(90-100)':'#16baaa',
+                                    '良好(75-89)':'#faad14',
+                                    '及格(60-74)':'#1890ff',
+                                    '不及格(<60)':'#f5222d'
+                                };
+                                return colors[params.name] || '#ccc';
+                            }
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{c}门',
+                            fontSize: 12,
+                            color: '#333'
+                        },
+                        labelLine: {
+                            show: true,
+                            length: 10,
+                            length2: 10
+                        }
+                    }],
+                    graphic: [{
+                        type: 'text',
+                        left: 'center',
+                        top: '52%',
+                        style: {
+                            text: '总课程',
+                            textAlign: 'center',
+                            fill: '#666',
+                            fontSize: 12,
+                            fontWeight: 'bold'
+                        }
+                    }, {
+                        type: 'text',
+                        left: 'center',
+                        top: '56%',
+                        style: {
+                            text: d.analysis.length + '门',
+                            textAlign: 'center',
+                            fill: '#16baaa',
+                            fontSize: 18,
+                            fontWeight: 'bold'
+                        }
+                    }]
+                });
+                
+                // 4. 柱状图优化
+                echarts.init(document.getElementById('barChart')).setOption({
+                    title: { 
+                        text: '各课程与平均分对比', 
+                        left: 'center', 
+                        top: 10, 
+                        textStyle: { fontSize: 18, fontWeight: 700, color: '#333' } 
+                    },
+                    tooltip: { 
+                        trigger: 'axis',
+                        formatter: function(params) {
+                            var result = params[0].name + '<br/>';
+                            params.forEach(function(param) {
+                                result += param.seriesName + ': ' + param.value + '分<br/>';
+                            });
+                            return result;
+                        }
+                    },
+                    legend: {
+                        data: ['我的分数','平均分'],
+                        bottom: -10,
+                        left: 'center',
+                        textStyle: { fontSize: 12, color: '#666' }
+                    },
+                    xAxis: { 
+                        type: 'category', 
+                        data: barX,
+                        axisLabel: { 
+                            fontWeight: 'bold', 
+                            fontSize: 12,
+                            rotate: 45,
+                            color: '#666'
+                        }
+                    },
+                    yAxis: { 
+                        type: 'value', 
+                        min: 0, 
+                        max: 100,
+                        axisLabel: { color: '#666' }
+                    },
+                    series: [
+                        { 
+                            name: '我的分数', 
+                            type: 'bar', 
+                            data: barMy, 
+                            itemStyle: { color: '#16baaa' }, 
+                            label: { 
+                                show: true, 
+                                position: 'top',
+                                color: '#16baaa',
+                                fontSize: 12
+                            } 
+                        },
+                        { 
+                            name: '平均分', 
+                            type: 'bar', 
+                            data: barAvg, 
+                            itemStyle: { color: '#f6bd16' }, 
+                            label: { 
+                                show: true, 
+                                position: 'top',
+                                color: '#f6bd16',
+                                fontSize: 12
+                            } 
+                        }
+                    ]
+                });
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

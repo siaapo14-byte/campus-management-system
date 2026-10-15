@@ -1,0 +1,261 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}用户管理 - 校园综合管理系统{% endblock %}
+
+{% block content %}
+<div class="layui-card">
+    <div class="layui-card-header">用户管理</div>
+    <div class="layui-card-body">
+        <div style="margin-bottom: 10px;">
+            <button class="layui-btn layui-btn-primary layui-btn-sm" id="add-user-btn">添加用户</button>
+            <button class="layui-btn layui-btn-danger layui-btn-sm" id="batch-delete-btn">批量删除</button>
+            <div class="layui-inline">
+                <input type="text" id="search-keyword" placeholder="请输入学号、工号或姓名" class="layui-input" style="width:180px;display:inline-block;">
+            </div>
+            <button class="layui-btn layui-btn-normal layui-btn-sm" id="search-btn">搜索</button>
+            <button class="layui-btn layui-btn-warm layui-btn-sm" id="reset-btn-user">重置</button>
+        </div>
+        <table class="layui-hide" id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<!-- 添加/编辑用户弹窗 -->
+<div id="user-modal" style="display:none;padding:20px;">
+    <form class="layui-form" id="user-form">
+        <input type="hidden" name="id" id="user-id">
+        <div class="layui-form-item">
+            <label class="layui-form-label">用户名</label>
+            <div class="layui-input-block">
+                <input type="text" name="username" id="username" required lay-verify="required" placeholder="请输入用户名" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">密码</label>
+            <div class="layui-input-block">
+                <input type="password" name="password" id="password" placeholder="不修改请留空" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">角色</label>
+            <div class="layui-input-block">
+                <select name="role" id="role" required lay-verify="required">
+                    <option value="Admin">管理员</option>
+                    <option value="Teacher">教师</option>
+                    <option value="Student">学生</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="user-form-submit">保存</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="cancel-btn">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 工具栏模板，直接写在HTML中 -->
+<script type="text/html" id="user-bar">
+  <a class="layui-btn layui-btn-xs edit-btn" lay-event="edit">编辑</a>
+  <a class="layui-btn layui-btn-danger layui-btn-xs delete-btn" lay-event="del">删除</a>
+</script>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+layui.use(['jquery', 'layer', 'form', 'table'], function(){
+    var $ = layui.$;
+    var layer = layui.layer;
+    var form = layui.form;
+    var table = layui.table;
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+
+    // 加载专业、班级、生源地下拉选项（可根据后端实际数据动态加载）
+    var majorOptions = ['所有专业','数据科学与大数据技术','机器人工程','人工智能'];
+    var classOptions = ['所有班级','23016101','23016102','23016201','23016301','23016302','23016303'];
+    var hometownOptions = ['所有生源地','四川-遂宁','广西-来宾','广东-广州','江苏-南京','山东-济南','河南-郑州','河北-石家庄','湖南-长沙','湖北-武汉','浙江-杭州','福建-福州','江西-南昌','辽宁-沈阳','吉林-长春','黑龙江-哈尔滨','陕西-西安','山西-太原','云南-昆明','贵州-贵阳','重庆-重庆','北京-北京','上海-上海','天津-天津'];
+    $('#search-major').html(majorOptions.map(function(m){return `<option value="${m==="所有专业"?"":m}">${m}</option>`}).join(''));
+    $('#search-class').html(classOptions.map(function(c){return `<option value="${c==="所有班级"?"":c}">${c}</option>`}).join(''));
+    $('#search-hometown').html(hometownOptions.map(function(h){return `<option value="${h==="所有生源地"?"":h}">${h}</option>`}).join(''));
+    form.render('select');
+
+    // 渲染表格
+    var userTable = table.render({
+        elem: '#user-table',
+        url: '/admin/api/users',
+        method: 'GET',
+        headers: getAuthHeaders(),
+        where: {},
+        page: true,
+        limit: 10,
+        limits: [10, 20, 50],
+        cols: [[
+            {type:'checkbox', fixed:'left'},
+            {field:'id', title:'ID', width:60},
+            {field:'username', title:'用户名', width:120},
+            {field:'password_mask', title:'密码', width:120},
+            {field:'role', title:'角色', width:90},
+            {field:'bind_name', title:'绑定姓名', width:120},
+            {field:'bind_id', title:'学号/工号', width:120},
+            {fixed:'right', title:'操作', width:140, align:'center', toolbar:'#user-bar'}
+        ]],
+        parseData: function(res){
+            return {
+                "code": 0,
+                "msg": res.msg || '',
+                "count": res.count,
+                "data": res.data
+            };
+        }
+    });
+
+    // 搜索/筛选
+    $('#search-btn').on('click', function(){
+        table.reload('user-table', {
+            where: {
+                keyword: $('#search-keyword').val()
+            },
+            page: {curr: 1}
+        });
+    });
+
+    // 批量删除
+    $('#batch-delete-btn').on('click', function(){
+        var checkStatus = table.checkStatus('user-table');
+        var ids = checkStatus.data.map(function(d){return d.id;});
+        if(ids.length === 0){
+            layer.msg('请先选择要删除的用户');
+            return;
+        }
+        layer.confirm('确定要批量删除选中的用户吗？', function(index){
+            $.ajax({
+                url: '/admin/api/users/batch_delete',
+                type: 'POST',
+                headers: getAuthHeaders(),
+                data: JSON.stringify({ids: ids}),
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('批量删除成功', {icon:1});
+                        table.reload('user-table');
+                    }else{
+                        layer.msg('批量删除失败: ' + (res.msg||'未知错误'), {icon:5});
+                    }
+                },
+                error: function(){
+                    layer.msg('请求失败，请稍后重试。', {icon:5});
+                }
+            });
+            layer.close(index);
+        });
+    });
+
+    // 重置按钮
+    $('#reset-btn-user').on('click', function(){
+        $('#search-keyword').val('');
+        table.reload('user-table', {
+            where: {},
+            page: {curr: 1}
+        });
+    });
+
+    // 表格工具栏事件
+    table.on('tool(user-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'edit'){
+            $('#user-form')[0].reset();
+            $('#user-id').val(data.id);
+            $('#username').val(data.username);
+            $('#password').val('');
+            $('#role').val(data.role);
+            form.render('select');
+            layer.open({
+                type: 1,
+                title: '编辑用户',
+                area: ['400px', '350px'],
+                content: $('#user-modal')
+            });
+        }else if(obj.event === 'del'){
+            layer.confirm('确定要删除该用户吗？', function(index){
+                $.ajax({
+                    url: '/admin/api/users/' + data.id,
+                    type: 'DELETE',
+                    headers: getAuthHeaders(),
+                    dataType: 'json',
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('删除成功', {icon:1});
+                            table.reload('user-table');
+                        }else{
+                            layer.msg('删除失败: ' + (res.msg||'未知错误'), {icon:5});
+                        }
+                    },
+                    error: function(){
+                        layer.msg('请求失败，请稍后重试。', {icon:5});
+                    }
+                });
+                layer.close(index);
+            });
+        }
+    });
+
+    // 打开添加用户弹窗
+    $('#add-user-btn').on('click', function(){
+        $('#user-form')[0].reset();
+        $('#user-id').val('');
+        layer.open({
+            type: 1,
+            title: '添加用户',
+            area: ['400px', '350px'],
+            content: $('#user-modal')
+        });
+    });
+
+    // 取消按钮
+    $('#cancel-btn').on('click', function(){
+        layer.closeAll('page');
+    });
+
+    // 提交表单（添加/编辑）
+    form.on('submit(user-form-submit)', function(data){
+        var id = $('#user-id').val();
+        var method = id ? 'PUT' : 'POST';
+        var url = id ? '/admin/api/users/' + id : '/admin/api/users';
+        var postData = {
+            username: $('#username').val(),
+            password: $('#password').val(),
+            role: $('#role').val()
+        };
+        $.ajax({
+            url: url,
+            type: method,
+            headers: getAuthHeaders(),
+            data: JSON.stringify(postData),
+            contentType: 'application/json',
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    layer.msg('保存成功', {icon: 1});
+                    layer.closeAll('page');
+                    table.reload('user-table');
+                } else {
+                    layer.msg('保存失败: ' + (res.msg || '未知错误'), {icon: 5});
+                }
+            },
+            error: function() {
+                layer.msg('请求失败，请稍后重试。', {icon: 5});
+            }
+        });
+        return false;
+    });
+});
+</script>
+{% endblock %} 

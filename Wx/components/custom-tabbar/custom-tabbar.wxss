@@ -1,0 +1,3 @@
+.tabbar-icon-wide {
+  width: 100rpx !important;
+} 

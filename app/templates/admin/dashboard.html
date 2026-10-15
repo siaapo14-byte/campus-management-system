@@ -1,0 +1,538 @@
+<!-- app/templates/admin/dashboard.html -->
+{% extends 'admin/base.html' %}
+
+{% block title %}仪表盘 - 校园综合管理系统{% endblock %}
+
+{% block content %}
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+        <!-- 学生总数卡片 -->
+        <div class="layui-col-md3">
+            <div class="layui-card layui-bg-blue">
+                <div class="layui-card-header">
+                    学生总数
+                    <span class="layui-badge layui-bg-white layui-right">人数</span>
+                </div>
+                <div class="layui-card-body layui-text-center">
+                    <p class="layuiadmin-big-font">{{ total_students }}</p>
+                    <p>
+                        <a href="{{ url_for('admin.manage_students_layui') }}" class="layui-btn layui-btn-normal layui-btn-sm">查看学生</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- 教师总数卡片 -->
+        <div class="layui-col-md3">
+            <div class="layui-card layui-bg-green">
+                <div class="layui-card-header">
+                    教师总数
+                    <span class="layui-badge layui-bg-white layui-right">人数</span>
+                </div>
+                <div class="layui-card-body layui-text-center">
+                    <p class="layuiadmin-big-font">{{ total_teachers }}</p>
+                    <p>
+                        <a href="{{ url_for('admin.manage_teachers_layui') }}" class="layui-btn layui-btn-normal layui-btn-sm">查看教师</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- 课程总数卡片 -->
+        <div class="layui-col-md3">
+            <div class="layui-card layui-bg-orange">
+                <div class="layui-card-header">
+                    课程总数
+                    <span class="layui-badge layui-bg-white layui-right">门数</span>
+                </div>
+                <div class="layui-card-body layui-text-center">
+                    <p class="layuiadmin-big-font">{{ total_courses }}</p>
+                    <p>
+                        <a href="{{ url_for('admin.manage_courses_layui') }}" class="layui-btn layui-btn-normal layui-btn-sm">查看课程</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- 成绩总数卡片 -->
+        <div class="layui-col-md3">
+            <div class="layui-card layui-bg-red">
+                <div class="layui-card-header">
+                    成绩记录总数
+                    <span class="layui-badge layui-bg-white layui-right">条数</span>
+                </div>
+                <div class="layui-card-body layui-text-center">
+                    <p class="layuiadmin-big-font">{{ total_grades }}</p>
+                    <p>
+                        <a href="{{ url_for('admin.manage_grades_layui') }}" class="layui-btn layui-btn-normal layui-btn-sm">查看成绩</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <!-- 课程成绩分布饼图 -->
+        <div class="layui-col-md6">
+            <div class="layui-card" style="height: 420px;">
+                <div class="layui-card-header">
+                    <span>课程成绩分布</span>
+                    <select id="courseSelect" style="float:right;min-width:120px;"></select>
+                </div>
+                <div class="layui-card-body">
+                    <div id="pieplot" class="dashboard-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- 课程成绩分布箱线图（去掉学生下拉框） -->
+        <div class="layui-col-md6">
+            <div class="layui-card" style="height: 420px;">
+                <div class="layui-card-header">
+                    <span>课程成绩分布箱线图</span>
+                </div>
+                <div class="layui-card-body">
+                    <div id="courseBoxplot" class="dashboard-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-row layui-col-space15">
+        <!-- 各专业平均成绩柱状图（去掉下拉框） -->
+        <div class="layui-col-md6">
+            <div class="layui-card" style="height: 420px;">
+                <div class="layui-card-header">
+                    <span>各专业平均成绩</span>
+                </div>
+                <div class="layui-card-body">
+                    <div id="majorAvgScorePlot" class="dashboard-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- 学生成绩雷达图 -->
+        <div class="layui-col-md6">
+            <div class="layui-card" style="height: 420px;">
+                <div class="layui-card-header">
+                    <span>学生成绩雷达图</span>
+                    <select id="studentSelect" style="float:right;min-width:120px;"></select>
+                </div>
+                <div class="layui-card-body">
+                    <div id="studentRadarPlot" class="dashboard-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-row layui-col-space15">
+        <!-- 学生生源地分布柱状图（移到下方独占一行） -->
+        <div class="layui-col-md12">
+            <div class="layui-card" style="height: 420px;">
+                <div class="layui-card-header">
+                    <span>学生生源地分布</span>
+                </div>
+                <div class="layui-card-body">
+                    <div id="hometownplot" class="dashboard-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <!-- 移除AI智能分析区域及按钮 -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dataTool.min.js') }}"></script>
+<style>
+.dashboard-chart {
+    width: 100%;
+    height: 320px;
+    min-height: 260px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 8px;
+}
+/* 统计卡片蓝色系美化 */
+.stat-card {
+    background: #1976d2;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.08);
+    padding: 18px 0 10px 0;
+    text-align: center;
+    font-size: 1.2em;
+    margin-right: 18px;
+    min-width: 120px;
+    display: inline-block;
+}
+.stat-card.students { background: #1565c0; }
+.stat-card.courses  { background: #1976d2; }
+.stat-card.teachers { background: #1e88e5; }
+.stat-card.grades   { background: #90caf9; color: #222; }
+</style>
+<script>
+layui.use(['jquery', 'element', 'layer'], function(){
+    var $ = layui.$;
+    var element = layui.element;
+    var layer = layui.layer;
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+
+    // 初始化下拉框
+    function initSelect(url, $select, valueField, textField, callback) {
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0 && res.data) {
+                    $select.empty();
+                    res.data.forEach(function(item) {
+                        $select.append('<option value="'+item[valueField]+'">'+item[textField]+'</option>');
+                    });
+                    if(callback) callback($select.val());
+                }
+            }
+        });
+    }
+
+    // 课程成绩分布饼图（简洁配色）
+    function renderPieplot(courseId) {
+        $.ajax({
+            url: '/admin/api/course_score_distribution?course_id=' + courseId,
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    var pieplot = echarts.init(document.getElementById('pieplot'));
+                    var option = {
+                        color: ['#1976d2', '#90caf9', '#b0bec5', '#e0e0e0'],
+                        title: {
+                            text: '课程成绩分布',
+                            left: 'center',
+                            top: 20,
+                            textStyle: { fontSize: 20, fontWeight: 700, color: '#1976d2' }
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            right: 10,
+                            top: 60,
+                            textStyle: { fontSize: 13, color: '#666' }
+                        },
+                        tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
+                        series: [{
+                            name: '分数段',
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            data: res.data,
+                            itemStyle: {
+                                borderRadius: 5,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: true,
+                                fontSize: 13,
+                                color: '#333',
+                                formatter: '{b}: {c} ({d}%)'
+                            }
+                        }]
+                    };
+                    pieplot.setOption(option);
+                }
+            }
+        });
+    }
+
+    // 各专业平均成绩柱状图（简洁配色）
+    function renderMajorAvgScore() {
+        $.ajax({
+            url: '/admin/api/major_avg_score',
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    var chart = echarts.init(document.getElementById('majorAvgScorePlot'));
+                    var option = {
+                        color: ['#1976d2'],
+                        title: {
+                            text: '各专业平均成绩',
+                            left: 'center',
+                            top: 20,
+                            textStyle: { fontSize: 20, fontWeight: 700, color: '#1976d2' }
+                        },
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                        grid: { left: 40, right: 20, bottom: 60, top: 60 },
+                        xAxis: {
+                            type: 'category',
+                            data: res.data.names,
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 30,
+                                fontSize: 13,
+                                color: '#333',
+                                formatter: function(value) {
+                                    return value.length > 8 ? value.slice(0,8) + '\n' + value.slice(8) : value;
+                                }
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            min: 0,
+                            max: 100,
+                            axisLabel: { color: '#666' }
+                        },
+                        series: [{
+                            name: '平均成绩',
+                            type: 'bar',
+                            barWidth: 32,
+                            data: res.data.scores,
+                            itemStyle: {
+                                borderRadius: [5,5,0,0],
+                                color: '#1976d2'
+                            },
+                            label: { show: true, position: 'top', formatter: '{c}', color: '#1976d2', fontWeight: 'bold' }
+                        }]
+                    };
+                    chart.setOption(option);
+                }
+            }
+        });
+    }
+
+    // 课程成绩分布箱线图（中间挖空，仅边框线）
+    function renderCourseBoxplot() {
+        $.ajax({
+            url: '/admin/api/course_score_boxplot',
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    var rawData = res.data.scores;
+                    var boxData = echarts.dataTool.prepareBoxplotData(rawData);
+                    var chart = echarts.init(document.getElementById('courseBoxplot'));
+                    var option = {
+                        title: {
+                            text: '课程成绩分布箱线图',
+                            left: 'center',
+                            top: 20,
+                            textStyle: { fontSize: 20, fontWeight: 700, color: '#1976d2' }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: function(param) {
+                                return [
+                                    '课程: ' + res.data.course_names[param.dataIndex],
+                                    '最大值: ' + param.data[5],
+                                    '上四分位: ' + param.data[4],
+                                    '中位数: ' + param.data[3],
+                                    '下四分位: ' + param.data[2],
+                                    '最小值: ' + param.data[1]
+                                ].join('<br/>');
+                            }
+                        },
+                        grid: { left: 40, right: 20, bottom: 60, top: 60 },
+                        xAxis: {
+                            type: 'category',
+                            data: res.data.course_names,
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 30,
+                                fontSize: 13,
+                                color: '#333',
+                                formatter: function(value) {
+                                    return value.length > 8 ? value.slice(0,8) + '\n' + value.slice(8) : value;
+                                }
+                            }
+                        },
+                        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { color: '#666' } },
+                        series: [{
+                            name: '成绩分布',
+                            type: 'boxplot',
+                            data: boxData.boxData,
+                            itemStyle: {
+                                color: 'rgba(0,0,0,0)', // 挖空
+                                borderColor: '#1976d2',
+                                borderWidth: 2
+                            },
+                            boxWidth: [20, 40]
+                        }]
+                    };
+                    chart.setOption(option);
+                }
+            }
+        });
+    }
+
+    // 统计卡片配色（假设卡片class为.stat-card）
+    $(function(){
+        $('.stat-card').css({
+            'background': '#1976d2',
+            'color': '#fff',
+            'border-radius': '8px',
+            'box-shadow': '0 2px 8px rgba(25,118,210,0.08)'
+        });
+    });
+
+    // 动态填充卡片数据（假设已有变量total_students等）
+    $(function(){
+        $('#totalStudents').text(typeof total_students !== 'undefined' ? total_students : '');
+        $('#totalCourses').text(typeof total_courses !== 'undefined' ? total_courses : '');
+        $('#totalTeachers').text(typeof total_teachers !== 'undefined' ? total_teachers : '');
+        $('#totalGrades').text(typeof total_grades !== 'undefined' ? total_grades : '');
+    });
+
+    // 学生成绩雷达图（点悬停显示科目和分数）
+    function renderStudentRadar(studentId) {
+        $.ajax({
+            url: '/admin/api/student_radar?student_id=' + studentId,
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    var chart = echarts.init(document.getElementById('studentRadarPlot'));
+                    var option = {
+                        title: {
+                            text: '学生成绩雷达图',
+                            left: 'center',
+                            top: 20,
+                            textStyle: { fontSize: 20, fontWeight: 700, color: '#1976d2' }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: function(params) {
+                                // params.value 是分数数组，params.name 是系列名
+                                if(params.seriesType === 'radar' && params.data && params.data.value) {
+                                    var tips = '';
+                                    for(var i=0;i<res.data.courses.length;i++){
+                                        tips += res.data.courses[i] + ': ' + params.data.value[i] + '<br/>';
+                                    }
+                                    return tips;
+                                }
+                                return '';
+                            }
+                        },
+                        radar: {
+                            indicator: res.data.courses.map(function(name){return {name:name,max:100};}),
+                            center: ['50%', '58%'],
+                            radius: '60%',
+                            name: {
+                                color: '#1976d2',
+                                fontWeight: 'bold',
+                                fontSize: 14,
+                                padding: [2, 6],
+                                distance: 8
+                            },
+                            splitArea: { areaStyle: { color: ['#f5f7fa', '#fff'] } },
+                            splitLine: { lineStyle: { color: '#b0bec5' } },
+                            axisLine: { lineStyle: { color: '#1976d2' } }
+                        },
+                        series: [{
+                            name: '成绩',
+                            type: 'radar',
+                            data: [{
+                                value: res.data.scores,
+                                name: '成绩',
+                                areaStyle: { color: 'rgba(25,118,210,0.10)' },
+                                lineStyle: { color: '#1976d2', width: 2 },
+                                symbol: 'circle',
+                                symbolSize: 8,
+                                itemStyle: { color: '#1976d2' }
+                            }]
+                        }]
+                    };
+                    chart.setOption(option);
+                }
+            }
+        });
+    }
+
+    // 生源地分布柱状图（简洁配色）
+    function renderHometownBar() {
+        $.ajax({
+            url: '/admin/api/hometown_distribution',
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    var chart = echarts.init(document.getElementById('hometownplot'));
+                    var option = {
+                        color: ['#1976d2'],
+                        title: {
+                            text: '学生生源地分布',
+                            left: 'center',
+                            top: 20,
+                            textStyle: { fontSize: 20, fontWeight: 700, color: '#1976d2' }
+                        },
+                        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                        grid: { left: 40, right: 20, bottom: 60, top: 60 },
+                        xAxis: {
+                            type: 'category',
+                            data: res.data.names,
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 30,
+                                fontSize: 13,
+                                color: '#333',
+                                formatter: function(value) {
+                                    return value.length > 8 ? value.slice(0,8) + '\n' + value.slice(8) : value;
+                                }
+                            }
+                        },
+                        yAxis: { type: 'value', name: '学生人数', axisLabel: { color: '#666' } },
+                        dataZoom: [{ type: 'slider', show: true, xAxisIndex: 0, height: 16, bottom: 0 }],
+                        series: [{
+                            name: '学生人数',
+                            type: 'bar',
+                            barWidth: 24,
+                            barCategoryGap: '40%',
+                            data: res.data.counts,
+                            itemStyle: {
+                                borderRadius: [5,5,0,0],
+                                color: '#1976d2'
+                            },
+                            label: { show: true, position: 'top', color: '#1976d2', fontWeight: 'bold' }
+                        }]
+                    };
+                    chart.setOption(option);
+                }
+            }
+        });
+    }
+
+    // 下拉框初始化和事件绑定
+    initSelect('/admin/api/courses/all', $('#courseSelect'), 'id', 'name', function(val){ renderPieplot(val); });
+    $('#courseSelect').on('change', function(){ renderPieplot($(this).val()); });
+
+    initSelect('/admin/api/students/all', $('#studentSelect'), 'id', 'name', function(val){ renderStudentRadar(val); });
+    $('#studentSelect').on('change', function(){ renderStudentRadar($(this).val()); });
+
+    renderHometownBar();
+    renderMajorAvgScore(); // 页面加载时直接渲染所有专业平均成绩
+    renderCourseBoxplot(); // 页面加载时自动渲染课程成绩分布箱线图
+
+    // resize
+    window.addEventListener('resize', function () {
+        echarts.getInstanceByDom(document.getElementById('pieplot'))?.resize();
+        echarts.getInstanceByDom(document.getElementById('hometownplot'))?.resize();
+        echarts.getInstanceByDom(document.getElementById('majorAvgScorePlot'))?.resize();
+        echarts.getInstanceByDom(document.getElementById('studentRadarPlot'))?.resize();
+        echarts.getInstanceByDom(document.getElementById('courseBoxplot'))?.resize();
+    });
+});
+</script>
+{% endblock %}

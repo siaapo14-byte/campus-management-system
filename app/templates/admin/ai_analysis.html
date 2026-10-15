@@ -1,0 +1,53 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}AI智能分析 - 校园综合管理系统{% endblock %}
+
+{% block content %}
+<div class="layui-card">
+    <div class="layui-card-header">AI智能分析</div>
+    <div class="layui-card-body" id="ai-analysis" style="min-height:120px;color:#2F3542;"></div>
+    <div style="text-align:right;margin-top:10px;">
+        <button id="ai-analysis-btn" class="layui-btn layui-btn-primary layui-btn-lg">点击进行AI智能分析</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+layui.use(['jquery', 'layer'], function(){
+    var $ = layui.$;
+    var layer = layui.layer;
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+    $('#ai-analysis-btn').on('click', function() {
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('分析中...');
+        $('#ai-analysis').html('AI分析进行中，请稍候...');
+        $.ajax({
+            url: '/admin/api/ai_analysis',
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    $('#ai-analysis').html(res.data ? res.data.replace(/\n/g, '<br>') : '分析结果为空');
+                } else {
+                    $('#ai-analysis').html('AI分析失败：' + (res.msg || '未知错误'));
+                }
+            },
+            error: function() {
+                $('#ai-analysis').html('AI分析请求失败，请稍后重试。');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).text('点击进行AI智能分析');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,8 @@
+<view class="custom-tabbar">
+  <block wx:for="{{tabList}}" wx:key="index">
+    <view class="tabbar-item" bindtap="onTabTap" data-index="{{index}}">
+      <image src="{{currentIndex === index ? item.selectedIconPath : item.iconPath}}" class="tabbar-icon{{item.text === '成绩' ? ' tabbar-icon-wide' : ''}}"/>
+      <text class="tabbar-text">{{item.text}}</text>
+    </view>
+  </block>
+</view> 

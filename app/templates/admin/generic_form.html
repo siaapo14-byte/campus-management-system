@@ -1,0 +1,318 @@
+<!-- app/templates/admin/generic_form.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>添加/编辑 {{ form_type_display_name }}</title>
+    <link href="https://unpkg.com/layui@2.11.4/dist/css/layui.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .layui-form-item .layui-input-block { margin-left: 120px; }
+        .layui-form-label { width: 100px; }
+        /* 移除之前隐藏动态表单提交按钮的样式，现在我们将它显示出来 */
+        /* #dynamicFormBtn { display: none; } */
+    </style>
+</head>
+<body>
+<form class="layui-form layui-form-pane" lay-filter="dynamicForm">
+    <!-- 动态生成的表单项将插入到这里 -->
+    <div id="formFieldsContainer"></div>
+
+    <div class="layui-form-item">
+        <input type="hidden" name="id" id="entityIdHidden"> <!-- 用于编辑时传递实体ID -->
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit="" lay-filter="submitDynamicForm">保存</button>
+            <button type="button" class="layui-btn layui-btn-primary" id="cancelBtn">取消</button>
+        </div>
+    </div>
+</form>
+
+<script src="https://unpkg.com/layui@2.11.4/dist/layui.js"></script>
+<script>
+    layui.use(['form', 'jquery', 'laydate', 'layer'], function(){
+        var form = layui.form;
+        var $ = layui.$;
+        var laydate = layui.laydate;
+        var layer = layui.layer;
+        // Fix incorrect URL path issue
+        var currentPath = window.location.pathname;
+        if (currentPath.includes('/admin/admin/')) {
+            var newPath = currentPath.replace('/admin/admin/', '/admin/');
+            window.history.replaceState({}, '', newPath + window.location.search);
+        }
+
+        // 从URL中获取表单类型和实体ID
+        var url = new URL(window.location.href);
+        var urlParams = new URLSearchParams(url.search);
+        var formType = urlParams.get('form_type');
+        var entityId = urlParams.get('id'); // 用于编辑模式
+        
+        // 检查并修正可能的错误路径
+        if (url.pathname.includes('/admin/admin/add_edit_form')) {
+            const newPath = url.pathname.replace('/admin/admin/add_edit_form', '/admin/add_edit_form');
+            window.location.href = newPath + url.search;
+        }
+
+        // 获取 JWT Headers 的辅助函数
+        function getAuthHeaders() {
+            const token = localStorage.getItem('jwt_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? 'Bearer ' + token : ''
+            };
+        }
+
+        var formConfig = null; // 存储表单配置
+
+        // 动态加载表单配置
+        function loadFormConfig() {
+            return fetch('/admin/api/form_config/' + formType, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0 && res.data) {
+                    formConfig = res.data;
+                    document.title = (entityId ? '编辑' : '添加') + formConfig.title; // 设置弹窗标题
+                    buildForm(); // 构建表单
+                } else {
+                    layer.alert('加载表单配置失败: ' + (res.msg || '未知错误'), {icon: 5});
+                    return Promise.reject('加载配置失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading form config:', error);
+                layer.alert('加载表单配置请求失败', {icon: 5});
+                return Promise.reject('加载配置请求失败');
+            });
+        }
+
+        // 构建表单元素
+        function buildForm() {
+            var container = $('#formFieldsContainer');
+            container.empty(); // 清空旧内容
+
+            formConfig.fields.forEach(function(field) {
+                var fieldHtml = '';
+                var commonAttrs = `name="${field.name}" ${field.verify ? `lay-verify="${field.verify}"` : ''} placeholder="请输入${field.label}" autocomplete="off"`;
+
+                if (field.type === 'text' || field.type === 'number') {
+                    fieldHtml = `
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">${field.label}</label>
+                            <div class="layui-input-block">
+                                <input type="${field.type}" ${commonAttrs} class="layui-input" ${field.step ? `step="${field.step}"` : ''} ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.max !== undefined ? `max="${field.max}"` : ''}>
+                            </div>
+                        </div>
+                    `;
+                } else if (field.type === 'textarea') {
+                    fieldHtml = `
+                        <div class="layui-form-item layui-form-text">
+                            <label class="layui-form-label">${field.label}</label>
+                            <div class="layui-input-block">
+                                <textarea ${commonAttrs} class="layui-textarea"></textarea>
+                            </div>
+                        </div>
+                    `;
+                } else if (field.type === 'select') {
+                    // 对于 select 字段，先渲染基础结构，然后异步加载选项
+                    fieldHtml = `
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">${field.label}</label>
+                            <div class="layui-input-block">
+                                <select ${commonAttrs} lay-search="">
+                                    <option value="">请选择${field.label}</option>
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                    container.append(fieldHtml); // 先添加到DOM
+                    
+                    // 动态加载select选项
+                    if (field.options_api) {
+                        loadSelectOptions(field.name, field.options_api, field.option_value_field, field.option_label_field, field.defaultValue);
+                    } else if (field.options) {
+                        // 如果options直接在config中定义
+                        var selectElem = $(`select[name="${field.name}"]`);
+                        field.options.forEach(function(option) {
+                            selectElem.append(new Option(option.label, option.value));
+                        });
+                        if (field.defaultValue !== undefined) {
+                            selectElem.val(field.defaultValue);
+                        }
+                        form.render('select'); // 渲染select组件
+                    }
+                    return; // 跳过后面的 append(fieldHtml)
+                } else if (field.type === 'date') {
+                    fieldHtml = `
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">${field.label}</label>
+                            <div class="layui-input-block">
+                                <input type="text" ${commonAttrs} class="layui-input layui-date" id="date-${field.name}">
+                            </div>
+                        </div>
+                    `;
+                }
+                container.append(fieldHtml);
+            });
+
+            form.render(); // 渲染所有新添加的表单元素
+
+            // 初始化日期选择器
+            $('.layui-date').each(function() {
+                laydate.render({
+                    elem: this,
+                    trigger: 'click', // 点击输入框触发
+                    type: 'date',
+                    value: this.value || '', // 设置默认值
+                    done: function(value, date, endDate){
+                        $(this.elem).val(value); // 确保选择日期后更新输入框
+                    }
+                });
+            });
+
+            // 如果是编辑模式，加载实体数据并填充表单
+            if (entityId) {
+                loadEntityData(entityId);
+            }
+        }
+
+        // 加载下拉选择框选项
+        function loadSelectOptions(fieldName, apiUrl, valueField, labelField, defaultValue = '') {
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0 && res.data) {
+                    var selectElem = $(`select[name="${fieldName}"]`);
+                    selectElem.empty(); // 清空现有选项
+                    selectElem.append(new Option(`请选择${formConfig.fields.find(f => f.name === fieldName).label}`, '')); // 添加默认空选项
+
+                    res.data.forEach(function(item) {
+                        selectElem.append(new Option(item[labelField], item[valueField]));
+                    });
+
+                    // 设置默认值（如果存在）
+                    if (defaultValue !== undefined && defaultValue !== null && defaultValue !== '') {
+                        selectElem.val(defaultValue);
+                    }
+                    
+                    form.render('select'); // 渲染select组件
+                } else {
+                    layer.msg('加载 ' + fieldName + ' 选项失败: ' + (res.msg || '未知错误'), {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error loading select options for ' + fieldName + ':', error);
+                layer.msg('加载 ' + fieldName + ' 选项请求失败', {icon: 5});
+            });
+        }
+
+        // 编辑模式下加载实体数据并填充表单
+        function loadEntityData(id) {
+            var getSingleApi = formConfig.api_get_single.replace('0', id); // 替换占位符
+            fetch(getSingleApi, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0 && res.data) {
+                    $('#entityIdHidden').val(res.data.id); // 设置隐藏的ID字段
+                    
+                    // 手动填充所有字段，包括日期和下拉框
+                    formConfig.fields.forEach(field => {
+                        let value = res.data[field.name];
+                        if (field.type === 'date') {
+                            $(`#date-${field.name}`).val(value || '');
+                            laydate.render({
+                                elem: `#date-${field.name}`,
+                                trigger: 'click',
+                                type: 'date',
+                                value: value || '',
+                                done: function(val, date, endDate){
+                                    $(this.elem).val(val);
+                                }
+                            });
+                        } else if (field.type === 'select') {
+                            $(`select[name="${field.name}"]`).val(value);
+                            // 确保异步加载的下拉框在数据填充后也能正确显示选中项
+                            if (field.options_api) {
+                                // 重新加载并设置选中项
+                                loadSelectOptions(field.name, field.options_api, field.option_value_field, field.option_label_field, value);
+                            }
+                        } else {
+                            $(`[name="${field.name}"]`).val(value);
+                        }
+                    });
+
+                    form.render(); // 重新渲染表单元素
+                } else {
+                    layer.alert('获取实体数据失败: ' + (res.msg || '未知错误'), {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error loading entity data:', error);
+                layer.alert('获取实体数据请求失败', {icon: 5});
+            });
+        }
+
+        // 加载表单配置并构建表单
+        loadFormConfig();
+
+        // 监听表单提交
+        form.on('submit(submitDynamicForm)', function(data){
+            var formData = data.field;
+            var url = '';
+            var method = '';
+
+            // 如果有ID，是更新操作
+            if (formData.id) {
+                url = formConfig.api_update_url.replace('0', formData.id);
+                method = 'PUT';
+            } else { // 没有ID，是创建操作
+                url = formConfig.api_create_url;
+                method = 'POST';
+            }
+            
+            // 确保数字类型字段正确转换
+            formConfig.fields.forEach(function(field) {
+                if (field.type === 'number' && formData[field.name] !== undefined && formData[field.name] !== null && formData[field.name] !== '') {
+                    formData[field.name] = parseFloat(formData[field.name]);
+                }
+            });
+
+            fetch(url, {
+                method: method,
+                headers: getAuthHeaders(),
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0) {
+                    layer.msg(res.msg || (formData.id ? '更新成功' : '添加成功'), {icon: 1});
+                    // 关闭当前弹窗，并通知父页面刷新表格
+                    parent.layui.layer.close(parent.layui.layer.getFrameIndex(window.name));
+                } else {
+                    layer.alert(res.msg || '操作失败', {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                layer.alert('请求失败', {icon: 5});
+            });
+
+            return false; // 阻止表单跳转
+        });
+
+        // 监听取消按钮点击
+        $('#cancelBtn').on('click', function() {
+            parent.layui.layer.close(parent.layui.layer.getFrameIndex(window.name)); // 关闭当前弹窗
+        });
+    });
+</script>
+</body>
+</html>

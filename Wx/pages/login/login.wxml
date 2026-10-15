@@ -1,0 +1,46 @@
+<view class="login-container">
+<view class="login-mokuai">
+  <!-- 顶部Logo区域 -->
+  <view class="logo-section">
+    <view class="logo-card">
+      <text class="app-name">校园管理系统</text>
+      <text class="app-subtitle">学生端</text>
+    </view>
+    
+  </view>
+
+  <!-- 仅学号密码登录 -->
+  <view class="login-methods">
+    <view class="login-method">
+      <view class="input-group">
+        <input class="input-field" 
+               type="text" 
+               placeholder="请输入学号" 
+               value="{{studentId}}" 
+               bindinput="onStudentIdInput" />
+      </view>
+      <view class="input-group">
+        <input class="input-field" 
+               type="password" 
+               placeholder="请输入密码" 
+               value="{{password}}" 
+               bindinput="onPasswordInput" />
+      </view>
+      <button class="password-login-btn" bindtap="handlePasswordLogin">登录</button>
+    </view>
+  </view>
+</view>
+  
+  <!-- 底部说明 -->
+  <view class="footer">
+    <text class="footer-text">登录即表示同意《用户协议》和《隐私政策》</text>
+  </view>
+
+  <!-- 加载提示 -->
+  <view class="loading-mask" wx:if="{{isLoading}}">
+    <view class="loading-content">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">{{loadingText}}</text>
+    </view>
+  </view>
+</view> 

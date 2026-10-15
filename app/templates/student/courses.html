@@ -1,0 +1,314 @@
+{% extends 'student/base.html' %}
+{% block title %}已选课程 - 校园综合管理系统{% endblock %}
+{% block content %}
+<!-- 统计卡片 -->
+<div class="layui-row layui-col-space15" style="margin-bottom: 20px;">
+    <div class="layui-col-md3">
+        <div class="stat-card stat-card-cyan">
+            <div class="stat-icon">
+                <i class="layui-icon layui-icon-read"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number" id="total-courses">0</div>
+                <div class="stat-label">已选课程</div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stat-card stat-card-orange">
+            <div class="stat-icon">
+                <i class="layui-icon layui-icon-credits"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number" id="total-credits">0</div>
+                <div class="stat-label">总学分</div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stat-card stat-card-purple">
+            <div class="stat-icon">
+                <i class="layui-icon layui-icon-ok-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number" id="completed-courses">0</div>
+                <div class="stat-label">已完成</div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stat-card stat-card-blue">
+            <div class="stat-icon">
+                <i class="layui-icon layui-icon-chart"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number" id="avg-score">0.0</div>
+                <div class="stat-label">平均分</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 课程表格 -->
+<div class="layui-card">
+    <div class="layui-card-header">
+        <div class="card-header-content">
+            <div class="header-title">
+                <i class="layui-icon layui-icon-read"></i>
+                <span>我的课程列表</span>
+            </div>
+        </div>
+    </div>
+    <div class="layui-card-body">
+        <div class="table-container">
+            <table class="layui-table" id="selected-courses-table">
+                <thead>
+                    <tr>
+                        <th>课程代码</th>
+                        <th>课程名称</th>
+                        <th>课程类型</th>
+                        <th>学分</th>
+                        <th>授课教师</th>
+                        <th>成绩</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="loading-row">
+                            <div class="loading-content">
+                                <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>
+                                <span>加载中...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    border-radius: 16px;
+    padding: 18px 20px;
+    color: #222;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 12px rgba(22,186,170,0.08);
+    background: rgba(255,255,255,0.7);
+    margin-bottom: 0;
+    transition: box-shadow 0.3s;
+}
+.stat-card-cyan { background: rgba(22,186,170,0.13); }
+.stat-card-orange { background: rgba(250,173,20,0.13); }
+.stat-card-purple { background: rgba(121,40,202,0.10); }
+.stat-card-blue { background: rgba(24,144,255,0.13); }
+.stat-icon {
+    font-size: 30px;
+    margin-right: 14px;
+    opacity: 0.7;
+}
+.stat-number {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: #222;
+}
+.stat-label {
+    font-size: 12px;
+    color: #888;
+    opacity: 0.8;
+    font-weight: 400;
+}
+.card-header-content { display: flex; justify-content: space-between; align-items: center; }
+.header-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; }
+.header-title i { color: #16baaa; }
+.table-container { overflow-x: auto; }
+.layui-table { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.layui-table thead tr { background: linear-gradient(135deg, #16baaa 0%, #0ea5a5 100%); color: white; }
+.layui-table thead th { font-weight: 500; padding: 15px 12px; border: none; }
+.layui-table tbody tr:hover { background-color: #f8f9fa; }
+.layui-table tbody td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+.loading-row { text-align: center; padding: 40px 0; }
+.loading-content { display: flex; align-items: center; justify-content: center; gap: 10px; color: #999; }
+.score-cell { font-weight: 500; }
+.score-excellent { color: #52c41a; background: rgba(82, 196, 26, 0.1); padding: 2px 8px; border-radius: 4px; }
+.score-good { color: #1890ff; background: rgba(24, 144, 255, 0.1); padding: 2px 8px; border-radius: 4px; }
+.score-pass { color: #faad14; background: rgba(250, 173, 20, 0.1); padding: 2px 8px; border-radius: 4px; }
+.score-fail { color: #f5222d; background: rgba(245, 34, 45, 0.1); padding: 2px 8px; border-radius: 4px; }
+.status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+.status-completed { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.status-ongoing { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+.drop-btn { border-radius: 4px; font-size: 11px; padding: 4px 8px; transition: all 0.3s ease; }
+.drop-btn:hover { transform: scale(1.05); }
+.empty-state { text-align: center; padding: 60px 20px; color: #999; }
+.empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state .empty-text { font-size: 14px; margin-bottom: 8px; }
+.empty-state .empty-subtext { font-size: 12px; opacity: 0.7; }
+</style>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+layui.use(['jquery', 'layer'], function(){
+    var $ = layui.$;
+    var layer = layui.layer;
+    
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+    
+    function updateStats(courses) {
+        const totalCourses = courses.length;
+        const totalCredits = courses.reduce((sum, c) => sum + (c.credits || 0), 0);
+        const completedCourses = courses.filter(c => c.score != null).length;
+        const scoredCourses = courses.filter(c => c.score != null);
+        const avgScore = scoredCourses.length > 0 
+            ? (scoredCourses.reduce((sum, c) => sum + c.score, 0) / scoredCourses.length).toFixed(1)
+            : '0.0';
+        
+        $('#total-courses').text(totalCourses);
+        $('#total-credits').text(totalCredits);
+        $('#completed-courses').text(completedCourses);
+        $('#avg-score').text(avgScore);
+    }
+    
+    function getScoreClass(score) {
+        if (score === null || score === undefined) return '';
+        if (score >= 90) return 'score-excellent';
+        if (score >= 80) return 'score-good';
+        if (score >= 60) return 'score-pass';
+        return 'score-fail';
+    }
+    
+    function getStatusBadge(score) {
+        if (score === null || score === undefined) {
+            return '<span class="status-badge status-ongoing">进行中</span>';
+        }
+        return '<span class="status-badge status-completed">已完成</span>';
+    }
+    
+    function loadSelectedCourses() {
+        $.ajax({
+            url: '/student/api/selected_courses',
+            type: 'GET',
+            headers: getAuthHeaders(),
+            dataType: 'json',
+            success: function(res) {
+                if(res.code === 0) {
+                    const courses = res.data || [];
+                    updateStats(courses);
+                    
+                    if (courses.length === 0) {
+                        $('#selected-courses-table tbody').html(`
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <i class="layui-icon layui-icon-face-cry"></i>
+                                    <div class="empty-text">暂无已选课程</div>
+                                    <div class="empty-subtext">快去选课中心选择心仪的课程吧</div>
+                                </td>
+                            </tr>
+                        `);
+                        return;
+                    }
+                    
+                    var html = '';
+                    courses.forEach(function(c){
+                        const scoreClass = getScoreClass(c.score);
+                        const statusBadge = getStatusBadge(c.score);
+                        const scoreDisplay = c.score != null ? c.score : '-';
+                        
+                        html += '<tr>' +
+                            '<td><strong>' + c.course_id + '</strong></td>' +
+                            '<td>' + c.name + '</td>' +
+                            '<td>' + c.type + '</td>' +
+                            '<td>' + c.credits + '</td>' +
+                            '<td>' + (c.teacher_name || '-') + '</td>' +
+                            '<td class="score-cell ' + scoreClass + '">' + scoreDisplay + '</td>' +
+                            '<td>' + statusBadge + '</td>' +
+                            '<td>' + (c.score == null ? 
+                                '<button class="layui-btn layui-btn-xs layui-btn-danger drop-btn" data-id="' + c.id + '">退课</button>' : 
+                                '<span style="color:#999;font-size:11px;">已结束</span>') + 
+                            '</td>' +
+                            '</tr>';
+                    });
+                    $('#selected-courses-table tbody').html(html);
+                } else {
+                    $('#selected-courses-table tbody').html(`
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                <i class="layui-icon layui-icon-face-cry"></i>
+                                <div class="empty-text">加载失败</div>
+                                <div class="empty-subtext">${res.msg || '请稍后重试'}</div>
+                            </td>
+                        </tr>
+                    `);
+                }
+            },
+            error: function() {
+                $('#selected-courses-table tbody').html(`
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="layui-icon layui-icon-face-cry"></i>
+                            <div class="empty-text">网络错误</div>
+                            <div class="empty-subtext">请检查网络连接后重试</div>
+                        </td>
+                    </tr>
+                `);
+            },
+            complete: function() {
+                // 绑定退课按钮事件
+                $('#selected-courses-table').off('click').on('click', '.drop-btn', function(){
+                    var $btn = $(this);
+                    var courseId = $btn.data('id');
+                    
+                    layer.confirm('确定要退选这门课程吗？', {
+                        icon: 3,
+                        title: '确认退课'
+                    }, function(index){
+                        layer.close(index);
+                        $btn.prop('disabled', true).text('提交中...');
+                        
+                        $.ajax({
+                            url: '/student/api/drop_course',
+                            type: 'POST',
+                            headers: getAuthHeaders(),
+                            contentType: 'application/json',
+                            data: JSON.stringify({course_id: courseId}),
+                            success: function(res) {
+                                if(res.code === 0) {
+                                    layer.msg('退课成功', {icon: 1});
+                                    loadSelectedCourses();
+                                } else {
+                                    $btn.text('退课').prop('disabled', false);
+                                    layer.msg(res.msg || '退课失败', {icon: 2});
+                                }
+                            },
+                            error: function(){
+                                $btn.text('退课').prop('disabled', false);
+                                layer.msg('请求失败', {icon: 2});
+                            }
+                        });
+                    });
+                });
+            }
+        });
+    }
+    
+    window.refreshCourses = function() {
+        loadSelectedCourses();
+        layer.msg('刷新成功', {icon: 1});
+    };
+    
+    $(function(){ 
+        loadSelectedCourses(); 
+    });
+});
+</script>
+{% endblock %} 

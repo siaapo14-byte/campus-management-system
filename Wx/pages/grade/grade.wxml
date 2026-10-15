@@ -1,0 +1,80 @@
+<view class="grade-container">
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stat-card">
+      <view class="stat-number">{{totalCourses}}</view>
+      <view class="stat-label">总课程数</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-number">{{averageScore}}</view>
+      <view class="stat-label">平均分</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-number">{{passRate}}%</view>
+      <view class="stat-label">及格率</view>
+    </view>
+  </view>
+
+  <!-- 搜索筛选 -->
+  <view class="filter-section">
+    <view class="search-box">
+      <input class="search-input" 
+             placeholder="搜索课程名称" 
+             value="{{searchKeyword}}" 
+             bindinput="onSearchInput" />
+    </view>
+    <view class="filter-row">
+      <picker class="filter-picker" 
+              range="{{scoreRanges}}" 
+              value="{{selectedScoreRange}}" 
+              bindchange="onScoreRangeChange">
+        <view class="picker-text">{{scoreRanges[selectedScoreRange]}}</view>
+      </picker>
+      <picker class="filter-picker" 
+              range="{{courseTypes}}" 
+              value="{{selectedCourseType}}" 
+              bindchange="onCourseTypeChange">
+        <view class="picker-text">{{courseTypes[selectedCourseType]}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 成绩列表 -->
+  <view class="grade-list">
+    <view class="list-header">
+      <text class="header-text">成绩详情</text>
+      <text class="header-count">共{{filteredGrades.length}}门课程</text>
+    </view>
+    
+    <view class="grade-item" wx:for="{{filteredGrades}}" wx:key="id">
+      <view class="course-info">
+        <view class="course-name">{{item.course_name}}</view>
+        <view class="course-details">
+          <text class="course-type">{{item.course_type}}</text>
+          <text class="course-credits">{{item.credits}}学分</text>
+          <text class="teacher-name">{{item.teacher_name}}</text>
+        </view>
+      </view>
+      <view class="score-section">
+        <view class="score {{item.score >= 90 ? 'excellent' : item.score >= 80 ? 'good' : item.score >= 60 ? 'pass' : 'fail'}}">
+          {{item.score}}
+        </view>
+        <view class="score-label">分</view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{filteredGrades.length === 0}}">
+      <image class="empty-icon" src="/static/images/empty.png" mode="aspectFit"></image>
+      <text class="empty-text">暂无成绩数据</text>
+    </view>
+  </view>
+
+  <!-- 加载提示 -->
+  <view class="loading-mask" wx:if="{{isLoading}}">
+    <view class="loading-content">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+</view> 

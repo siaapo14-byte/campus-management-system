@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>课程表单</title>
+    <link href="https://unpkg.com/layui@2.11.4/dist/css/layui.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .layui-form-item .layui-input-block { margin-left: 120px; } /* 调整输入框块的左外边距 */
+        .layui-form-label { width: 100px; } /* 调整标签宽度 */
+    </style>
+</head>
+<body>
+<form class="layui-form layui-form-pane" lay-filter="courseForm">
+    <div class="layui-form-item">
+        <label class="layui-form-label">课程名称</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" lay-verify="required" placeholder="请输入课程名称" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">课程代码</label>
+        <div class="layui-input-block">
+            <input type="text" name="code" lay-verify="required" placeholder="请输入课程代码" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">学分</label>
+        <div class="layui-input-block">
+            <input type="number" name="credit" lay-verify="required|number" placeholder="请输入学分" autocomplete="off" class="layui-input" step="0.1">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">授课教师</label>
+        <div class="layui-input-block">
+            <select name="teacher_id" lay-verify="required" lay-search="">
+                <option value="">请选择授课教师</option>
+                </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+        <label class="layui-form-label">课程描述</label>
+        <div class="layui-input-block">
+            <textarea name="description" placeholder="请输入课程描述" class="layui-textarea"></textarea>
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-hide">
+        <input type="hidden" name="id"> <button class="layui-btn" lay-submit="" lay-filter="submitCourse" id="submitCourseBtn">提交</button>
+    </div>
+</form>
+
+<script src="https://unpkg.com/layui@2.11.4/dist/layui.js"></script>
+<script>
+    layui.use(['form', 'jquery'], function(){
+        var form = layui.form;
+        var $ = layui.$;
+        var layer = layui.layer;
+
+        // 获取 URL 中的 course_id 参数
+        var course_id = new URLSearchParams(location.search).get('course_id');
+
+        // 获取 JWT Headers 的辅助函数
+        function getAuthHeaders() {
+            const token = localStorage.getItem('jwt_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? 'Bearer ' + token : ''
+            };
+        }
+
+        // 加载教师列表到下拉框
+        function loadTeachers() {
+            fetch('{{ url_for("admin.get_teachers_api_route") }}', { // 假设有获取所有教师的API
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0) {
+                    var teacherSelect = $('select[name="teacher_id"]');
+                    res.data.forEach(function(teacher) {
+                        teacherSelect.append(new Option(teacher.name + ' (' + teacher.teacher_id + ')', teacher.id));
+                    });
+                    form.render('select'); // 渲染select组件
+                    // 如果是编辑模式，加载完教师后填充数据
+                    if (course_id) {
+                        loadCourseData(course_id);
+                    }
+                } else {
+                    layer.msg('加载教师列表失败: ' + (res.msg || '未知错误'), {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error loading teachers:', error);
+                layer.msg('加载教师列表请求失败', {icon: 5});
+            });
+        }
+
+        // 编辑模式下加载课程数据并填充表单
+        function loadCourseData(id) {
+            fetch('{{ url_for("admin.get_course_api_route", course_id=0) }}'.replace('0', id), {
+                method: 'GET',
+                headers: getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0 && res.data) {
+                    form.val('courseForm', { // 填充表单数据
+                        "id": res.data.id,
+                        "name": res.data.name,
+                        "code": res.data.code,
+                        "credit": res.data.credit,
+                        "description": res.data.description,
+                        "teacher_id": res.data.teacher_id // 确保字段名与select的name一致
+                    });
+                    form.render(); // 重新渲染表单元素
+                } else {
+                    layer.alert('获取课程数据失败: ' + (res.msg || '未知错误'), {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error loading course data:', error);
+                layer.alert('获取课程数据请求失败', {icon: 5});
+            });
+        }
+
+        // 页面加载时先加载教师列表
+        loadTeachers();
+
+        // 监听表单提交
+        form.on('submit(submitCourse)', function(data){
+            var formData = data.field;
+            var url = '';
+            var method = '';
+
+            if (formData.id) { // 有ID是编辑
+                url = '{{ url_for("admin.update_course_api_route", course_id=0) }}'.replace('0', formData.id);
+                method = 'PUT'; // 更新通常用 PUT
+            } else { // 无ID是添加
+                url = '{{ url_for("admin.create_course_api_route") }}';
+                method = 'POST';
+            }
+
+            fetch(url, {
+                method: method,
+                headers: getAuthHeaders(),
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.code === 0) {
+                    layer.msg(res.msg || (formData.id ? '更新成功' : '添加成功'), {icon: 1});
+                    // 关闭当前弹窗，并通知父页面刷新表格
+                    parent.layui.layer.close(parent.layui.layer.getFrameIndex(window.name));
+                } else {
+                    layer.alert(res.msg || '操作失败', {icon: 5});
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                layer.alert('请求失败', {icon: 5});
+            });
+
+            return false; // 阻止表单跳转
+        });
+
+        // 触发父页面的提交按钮
+        $(document).on('click', '#submitCourseBtn', function(){
+            form.submit('submitCourse');
+        });
+    });
+</script>
+</body>
+</html>

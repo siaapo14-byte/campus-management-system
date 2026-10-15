@@ -1,0 +1,243 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}课程管理 - 校园综合管理系统{% endblock %}
+
+{% block content %}
+    <h1>课程管理</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for category, message in messages %}
+                <li class="{{ category }} {{ 'layui-bg-green' if category == 'success' else 'layui-bg-red' }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div style="padding: 16px 0;">
+        <table class="layui-hide" id="courseTable" lay-filter="courseTable"></table>
+    </div>
+
+    <script type="text/html" id="toolbarCourses">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="addCourse">添加课程</button>
+            <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="batchDelete">批量删除</button>
+            <div class="layui-inline" style="margin-left: 20px;">
+                <label class="layui-form-label" style="width: auto; padding-right: 5px;">课程名称:</label>
+                <div class="layui-input-inline">
+                    <input type="text" id="searchKeyword" placeholder="请输入课程名称" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto; padding-right: 5px;">授课教师:</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="filterTeacher" lay-filter="filterTeacher">
+                        <option value="">所有教师</option>
+                        {% for teacher in teachers %} {# 假设后端会传递 teachers 列表 #}
+                        <option value="{{ teacher.id }}">{{ teacher.name }} ({{ teacher.teacher_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="search">搜索/筛选</button>
+                <button class="layui-btn layui-btn-warm layui-btn-sm" id="reset-btn-course">重置</button>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/html" id="barCourse">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+    layui.use(['table', 'form', 'layer', 'jquery'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        // 获取 JWT Headers 的辅助函数
+        function getAuthHeaders() {
+            const token = localStorage.getItem('jwt_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? 'Bearer ' + token : ''
+            };
+        }
+
+        // 渲染课程表格
+        var courseTableInstance = table.render({
+            elem: '#courseTable',
+            url: '{{ url_for("admin.get_courses_api_route") }}', // 修复：使用正确的后端API路由
+            toolbar: '#toolbarCourses',
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {type: 'checkbox', fixed: 'left'},
+                {field: 'id', title: 'ID', width: 80, sort: true, fixed: 'left', hide: true},
+                {field: 'name', title: '课程名称', minWidth: 150},
+                {field: 'course_id', title: '课程代码', width: 120},
+                {field: 'credits', title: '学分', width: 90, sort: true},
+                {field: 'teacher_name', title: '授课教师', minWidth: 120},
+                {field: 'description', title: '描述', minWidth: 200},
+                {title: '操作', toolbar: '#barCourse', width: 150, fixed: 'right'}
+            ]],
+            page: true, // 开启分页
+            height: 'full-150', // 全屏高度自适应
+            text: {
+                none: '暂无相关数据' // 无数据时的提示文本
+            },
+            headers: getAuthHeaders(), // 添加认证头
+            parseData: function(res){ // res 即为 Layui 的异步请求返回的原始数据
+                return {
+                    "code": res.code, // 解析接口状态
+                    "msg": res.msg || '', // 解析提示文本
+                    "count": res.count, // 解析数据总数
+                    "data": res.data // 解析数据列表
+                };
+            },
+            done: function(res, curr, count){
+                var currentTeacherId = this.where ? this.where.teacher_id : '';
+                $('#filterTeacher').val(currentTeacherId);
+                form.render('select');
+            },
+            error: function(res, msg){
+                console.error("Layui Table Request Error:", res, msg);
+                if (res.status === 401) {
+                    layer.alert('您的登录已过期，请重新登录。', {
+                        icon: 0,
+                        title: '会话过期'
+                    }, function(index){
+                        layer.close(index);
+                        window.location.href = '{{ url_for("auth.login") }}';
+                    });
+                } else {
+                    layer.msg('数据加载失败，请稍后重试。', {icon: 5});
+                }
+            }
+        });
+
+        // 重新加载表格数据
+        function reloadCourseTable(searchParams = {}) {
+            courseTableInstance.reload({
+                where: searchParams,
+                page: {
+                    curr: 1
+                }
+            });
+        }
+
+        // 监听头部工具栏事件
+        table.on('toolbar(courseTable)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch(obj.event){
+                case 'addCourse':
+                    layer.open({
+                        type: 2,
+                        title: '添加新课程',
+                        area: ['60%', '80%'],
+                        content: '{{ url_for("admin.add_edit_form", form_type="course") }}', // 指向通用表单
+                        end: function(){
+                            reloadCourseTable(); // 关闭弹窗后重新加载表格
+                        }
+                    });
+                break;
+                case 'batchDelete':
+                    var data = checkStatus.data;
+                    if(data.length === 0){
+                        return layer.msg('请选择要删除的课程');
+                    }
+                    layer.confirm('确定要删除选中的 ' + data.length + ' 条课程记录吗？', {icon: 3, title:'提示'}, function(index){
+                        var ids = data.map(item => item.id);
+                        fetch('{{ url_for("admin.batch_delete_courses_api_route") }}', { // 修复：使用正确的后端API路由
+                            method: 'POST',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ids: ids})
+                        })
+                        .then(response => response.json())
+                        .then(res => {
+                            if(res.code === 0){
+                                layer.msg('删除成功', {icon: 1});
+                                reloadCourseTable();
+                            } else {
+                                layer.msg(res.msg || '删除失败', {icon: 5});
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error (batch delete):', error);
+                            layer.msg('请求失败', {icon: 5});
+                        });
+                        layer.close(index);
+                    });
+                break;
+                case 'search':
+                    var keyword = $('#searchKeyword').val();
+                    var teacherId = $('#filterTeacher').val();
+                    reloadCourseTable({
+                        keyword: keyword,
+                        teacher_id: teacherId
+                    });
+                break;
+            }
+        });
+
+        // 监听行工具事件
+        table.on('tool(courseTable)', function(obj){
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if(layEvent === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑课程信息',
+                    area: ['60%', '80%'],
+                    content: '{{ url_for("admin.add_edit_form", form_type="course", id=0) }}'.replace('0', data.id), // 修复：使用正确的URL生成方式
+                    end: function(){
+                        reloadCourseTable();
+                    }
+                });
+            } else if(layEvent === 'del'){
+                layer.confirm('确定要删除课程：' + data.name + ' (' + data.course_id + ') 吗？', {icon: 3, title:'提示'}, function(index){
+                    fetch('{{ url_for("admin.delete_course_api_route", course_id=0) }}'.replace('0', data.id), { // 修复：使用正确的后端API路由
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                    })
+                    .then(response => response.json())
+                    .then(res => {
+                        if(res.code === 0){
+                            obj.del(); // 删除表格行
+                            layer.msg('删除成功', {icon: 1});
+                        } else {
+                            layer.msg(res.msg || '删除失败', {icon: 5});
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error (del):', error);
+                        layer.msg('请求失败', {icon: 5});
+                    });
+                    layer.close(index);
+                });
+            }
+        });
+
+        // 监听教师筛选下拉框变化
+        form.on('select(filterTeacher)', function(data){ /* 仅用于Layui渲染，不在此处触发搜索 */ });
+
+        $('#reset-btn-course').on('click', function(){
+            $('#searchKeyword').val('');
+            $('#filterTeacher').val('');
+            layui.form.render('select');
+            table.reload('courseTable', {
+                where: {},
+                page: {curr: 1}
+            });
+        });
+    });
+</script>
+{% endblock %}

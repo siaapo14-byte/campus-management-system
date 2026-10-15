@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}学生端 - 校园综合管理系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/css/layui.css">
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/layui.js"></script>
+    {% block head %}{% endblock %}
+    <style>
+        /* 学生端整体样式优化 */
+        .student-logo {
+            color: #16baaa;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px 0 12px 20px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 12px;
+        }
+        
+        .layui-side-scroll { 
+            min-width: 180px; 
+        }
+        
+        /* 顶部导航栏 */
+        .layui-header {
+            background: linear-gradient(135deg, #16baaa, #0ea5e9) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .layui-logo {
+            color: #fff !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            background: transparent !important;
+        }
+        
+        .layui-nav {
+            background: transparent !important;
+        }
+        
+        .layui-nav .layui-nav-item > a {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+        }
+        
+        .layui-nav .layui-nav-item > a:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,0.1) !important;
+        }
+        
+        .layui-nav .layui-nav-item.layui-this > a {
+            background: rgba(255,255,255,0.2) !important;
+            color: #fff !important;
+        }
+        
+        /* 侧边栏优化 */
+        .layui-side {
+            background: #2c3e50 !important;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+        
+        .layui-nav-tree {
+            background: transparent !important;
+        }
+        
+        .layui-nav-tree .layui-nav-item > a {
+            color: rgba(255,255,255,0.8) !important;
+            padding: 12px 20px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            border-radius: 0 20px 20px 0 !important;
+            margin: 2px 0 !important;
+        }
+        
+        .layui-nav-tree .layui-nav-item > a:hover {
+            background: rgba(22,186,170,0.2) !important;
+            color: #fff !important;
+            transform: translateX(4px);
+        }
+        
+        .layui-nav-tree .layui-nav-item.layui-this > a {
+            background: #16baaa !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(22,186,170,0.3);
+        }
+        
+        .layui-nav-tree .layui-nav-item > a:before {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 3px;
+            background: currentColor;
+            border-radius: 50%;
+            margin-right: 10px;
+            opacity: 0.6;
+        }
+        
+        /* 主内容区域 */
+        .layui-body {
+            background: #f8fafc !important;
+            padding: 24px !important;
+        }
+        
+        /* 用户头像和下拉菜单 */
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            border: 2px solid rgba(255,255,255,0.3);
+            font-size: 12px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+            white-space: nowrap;
+            padding: 0 8px;
+            flex-direction: row;
+        }
+        
+        .user-info .layui-icon {
+            font-size: 12px;
+        }
+        
+        /* 顶部导航栏右侧布局修复 */
+        .layui-layout-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        
+        .layui-nav .layui-nav-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .layui-nav .layui-nav-child {
+            background: rgba(44, 62, 80, 0.95) !important;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .layui-nav .layui-nav-child dd a {
+            color: rgba(255,255,255,0.8) !important;
+            padding: 8px 16px !important;
+            font-size: 12px !important;
+        }
+        
+        .layui-nav .layui-nav-child dd a:hover {
+            background: rgba(22,186,170,0.2) !important;
+            color: #fff !important;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .layui-side {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .layui-side.layui-side-shrink {
+                transform: translateX(0);
+            }
+            
+            .layui-body {
+                padding: 16px !important;
+            }
+            
+            .layui-layout-right {
+                gap: 6px;
+            }
+            
+            .user-info {
+                font-size: 12px;
+                gap: 6px;
+            }
+            
+            .user-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <!-- 顶部导航栏 -->
+    <div class="layui-header">
+        <div class="layui-logo">校园管理系统 - 学生端</div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;" class="user-info">
+                    <span id="student-name">学生</span>
+                    <i class="layui-icon layui-icon-down"></i>
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="/student/profile"><i class="layui-icon layui-icon-user"></i> 个人信息</a></dd>
+                    <dd><a href="/auth/logout"><i class="layui-icon layui-icon-logout"></i> 退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="layui-side layui-bg-black">
+        <div class="student-logo">
+            <i class="layui-icon layui-icon-user" style="margin-right:6px;"></i>
+            学生端
+        </div>
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-shrink="all">
+                <li class="layui-nav-item {% if request.endpoint == 'student.profile' %}layui-this{% endif %}">
+                    <a href="/student/profile">
+                        <i class="layui-icon layui-icon-user" style="margin-right:6px;"></i>个人信息
+                    </a>
+                </li>
+                <li class="layui-nav-item {% if request.endpoint == 'student.courses' %}layui-this{% endif %}">
+                    <a href="/student/courses">
+                        <i class="layui-icon layui-icon-list" style="margin-right:6px;"></i>课程列表
+                    </a>
+                </li>
+                <li class="layui-nav-item {% if request.endpoint == 'student.grades' %}layui-this{% endif %}">
+                    <a href="/student/grades">
+                        <i class="layui-icon layui-icon-chart" style="margin-right:6px;"></i>成绩查询
+                    </a>
+                </li>
+                <li class="layui-nav-item {% if request.endpoint == 'student.analysis' %}layui-this{% endif %}">
+                    <a href="/student/analysis">
+                        <i class="layui-icon layui-icon-chart-screen" style="margin-right:6px;"></i>成绩分析
+                    </a>
+                </li>
+                <li class="layui-nav-item {% if request.endpoint == 'student.choose_courses' %}layui-this{% endif %}">
+                    <a href="/student/choose_courses">
+                        <i class="layui-icon layui-icon-add-1" style="margin-right:6px;"></i>选课功能
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="layui-body">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script>
+layui.use(['element', 'jquery'], function(){
+    var element = layui.element;
+    var $ = layui.$;
+    
+    // 获取学生信息并显示在顶部
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+    
+    $.ajax({
+        url: '/student/api/profile',
+        type: 'GET',
+        headers: getAuthHeaders(),
+        dataType: 'json',
+        success: function(res) {
+            if(res.code === 0) {
+                var d = res.data;
+                $('#student-name').text(d.name);
+                $('#header-avatar').text(d.name ? d.name.charAt(0) : '学');
+            }
+        }
+    });
+    
+    // 移动端侧边栏切换
+    if(window.innerWidth <= 768) {
+        $('.layui-side').addClass('layui-side-shrink');
+    }
+});
+</script>
+
+{% block custom_js %}{% endblock %}
+</body>
+</html> 

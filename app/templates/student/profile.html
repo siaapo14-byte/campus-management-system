@@ -1,0 +1,198 @@
+{% extends 'student/base.html' %}
+{% block title %}个人信息 - 校园综合管理系统{% endblock %}
+{% block content %}
+<div class="student-card fade-in">
+    <div class="student-card-header">
+        <h2 class="student-card-title">
+            <i class="layui-icon layui-icon-user" style="color: #16baaa;"></i>
+            个人信息
+        </h2>
+    </div>
+    <div class="student-card-body">
+        <div class="responsive-grid">
+            <!-- 基本信息 -->
+            <div class="info-section">
+                <h3 style="color: #333; margin-bottom: 20px; font-size: 16px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px;">
+                    <i class="layui-icon layui-icon-username" style="color: #16baaa; margin-right: 8px;"></i>
+                    基本信息
+                </h3>
+                <table class="student-table">
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: 500; color: #666; width: 120px;">
+                                <i class="layui-icon layui-icon-username" style="margin-right: 8px; color: #16baaa;"></i>学号
+                            </td>
+                            <td id="student_id" style="font-weight: bold; color: #333;"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-user" style="margin-right: 8px; color: #16baaa;"></i>姓名
+                            </td>
+                            <td id="name" style="font-weight: bold; color: #333;"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-male" style="margin-right: 8px; color: #16baaa;"></i>性别
+                            </td>
+                            <td id="gender"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-home" style="margin-right: 8px; color: #16baaa;"></i>生源地
+                            </td>
+                            <td id="hometown"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 学习信息 -->
+            <div class="info-section">
+                <h3 style="color: #333; margin-bottom: 20px; font-size: 16px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px;">
+                    <i class="layui-icon layui-icon-read" style="color: #16baaa; margin-right: 8px;"></i>
+                    学习信息
+                </h3>
+                <table class="student-table">
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: 500; color: #666; width: 120px;">
+                                <i class="layui-icon layui-icon-list" style="margin-right: 8px; color: #16baaa;"></i>专业
+                            </td>
+                            <td id="major" style="font-weight: bold; color: #333;"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-group" style="margin-right: 8px; color: #16baaa;"></i>班级
+                            </td>
+                            <td id="class_name"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-date" style="margin-right: 8px; color: #16baaa;"></i>入学日期
+                            </td>
+                            <td id="enrollment_date"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500; color: #666;">
+                                <i class="layui-icon layui-icon-birthday-cake" style="margin-right: 8px; color: #16baaa;"></i>出生日期
+                            </td>
+                            <td id="birthdate"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 快速操作 -->
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #f0f0f0;">
+            <h3 style="color: #333; margin-bottom: 20px; font-size: 16px;">
+                <i class="layui-icon layui-icon-set" style="color: #16baaa; margin-right: 8px;"></i>
+                快速操作
+            </h3>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <button class="student-btn student-btn-primary" onclick="location.href='/student/grades'">
+                    <i class="layui-icon layui-icon-chart"></i>
+                    查看成绩
+                </button>
+                <button class="student-btn student-btn-success" onclick="location.href='/student/analysis'">
+                    <i class="layui-icon layui-icon-chart-screen"></i>
+                    成绩分析
+                </button>
+                <button class="student-btn student-btn-warning" onclick="location.href='/student/courses'">
+                    <i class="layui-icon layui-icon-list"></i>
+                    课程列表
+                </button>
+                <button class="student-btn student-btn-primary" onclick="location.href='/student/choose_courses'">
+                    <i class="layui-icon layui-icon-add-1"></i>
+                    选课功能
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-section {
+    background: #fafbfc;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #f0f0f0;
+}
+
+.info-section:hover {
+    background: #f8fafc;
+    border-color: #e6f7ff;
+}
+
+.student-table td:first-child {
+    background: rgba(22,186,170,0.05);
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .responsive-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-section {
+        margin-bottom: 20px;
+    }
+    
+    .student-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+layui.use(['jquery'], function(){
+    var $ = layui.$;
+    
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? 'Bearer ' + token : ''
+        };
+    }
+    
+    // 显示加载状态
+    $('td[id]').html('<span class="loading-spinner"></span>');
+    
+    $.ajax({
+        url: '/student/api/profile',
+        type: 'GET',
+        headers: getAuthHeaders(),
+        dataType: 'json',
+        success: function(res) {
+            if(res.code === 0) {
+                var d = res.data;
+                
+                // 填充数据
+                $('#student_id').text(d.student_id || '-');
+                $('#name').text(d.name || '-');
+                $('#gender').text(d.gender || '-');
+                $('#major').text(d.major || '-');
+                $('#class_name').text(d.class_name || '-');
+                $('#birthdate').text(d.birthdate || '-');
+                $('#enrollment_date').text(d.enrollment_date || '-');
+                $('#hometown').text(d.hometown || '-');
+                
+                // 添加动画效果
+                $('td[id]').addClass('slide-in');
+            } else {
+                // 显示错误信息
+                $('td[id]').html('<span style="color: #f5222d;">加载失败</span>');
+            }
+        },
+        error: function() {
+            // 显示错误信息
+            $('td[id]').html('<span style="color: #f5222d;">网络错误</span>');
+        }
+    });
+});
+</script>
+{% endblock %} 

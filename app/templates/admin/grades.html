@@ -1,0 +1,253 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}成绩管理 - 校园综合管理系统{% endblock %}
+
+{% block content %}
+    <h1>成绩管理</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div style="padding: 16px 0;">
+        <table class="layui-hide" id="gradeTable" lay-filter="gradeTable"></table>
+    </div>
+
+    <script type="text/html" id="toolbarGrades">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="addGrade">录入成绩</button>
+            <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="batchDelete">批量删除</button>
+
+            <div class="layui-inline" style="margin-left: 20px;">
+                <label class="layui-form-label" style="width: auto; padding-right: 5px;">学生:</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="filterStudent" lay-filter="filterStudent">
+                        <option value="">所有学生</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.name }} ({{ student.student_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto; padding-right: 5px;">课程:</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="filterCourse" lay-filter="filterCourse">
+                        <option value="">所有课程</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="search">筛选</button>
+            <button class="layui-btn layui-btn-warm layui-btn-sm" id="reset-btn-grade">重置</button>
+        </div>
+    </script>
+
+    <script type="text/html" id="barGrades">
+        <div class="layui-clear-space">
+            <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+        </div>
+    </script>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+    layui.use(['table', 'layer', 'form'], function(){
+        var table = layui.table;
+        var layer = layui.layer;
+        var form = layui.form;
+        var $ = layui.$;
+
+        // Get JWT token from localStorage
+        const jwtToken = localStorage.getItem('jwt_token');
+
+        // Helper function: Get headers with JWT for authentication
+        const getAuthHeaders = () => {
+            const headers = { 'Content-Type': 'application/json' };
+            if (jwtToken) {
+                headers['Authorization'] = 'Bearer ' + jwtToken;
+            }
+            return headers;
+        };
+
+        // Helper function: Reload grade table
+        var reloadGradeTable = function(searchParams = {}) {
+            table.reload('gradeTable', {
+                where: searchParams,
+                page: { curr: 1 },
+                headers: getAuthHeaders() // Ensure JWT headers are included on reload
+            });
+        };
+
+        // Render grade table
+        table.render({
+            elem: '#gradeTable',
+            url: '/admin/api/grades', // 直接写死API路径，避免url_for错误
+            toolbar: '#toolbarGrades',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {type: 'checkbox', fixed: 'left'},
+                {field: 'id', title: 'ID', width: 80, sort: true, hide: true},
+                {field: 'student_name', title: '学生姓名', width: 120},
+                {field: 'student_id', title: '学号', width: 120}, // Assuming student_id from to_dict
+                {field: 'course_name', title: '课程名称', width: 150},
+                {field: 'score', title: '分数', width: 100, sort: true, templet: function(d){
+                    var color = d.score >= 60 ? 'green' : 'red';
+                    return '<span style="color:' + color + ';font-weight:bold;">' + d.score + '</span>';
+                }},
+                {field: 'pass_status', title: '成绩状态', width: 100, templet: function(d){
+                    if(d.score >= 60) return '<span style="color:green;font-weight:bold;">及格</span>';
+                    return '<span style="color:red;font-weight:bold;">未及格</span>';
+                }},
+                {fixed: 'right', title: '操作', toolbar: '#barGrades', width: 150}
+            ]],
+            page: true,
+            limit: 10,
+            limits: [10, 20, 30, 40, 50],
+            height: 'full-180',
+            headers: getAuthHeaders(), // Add JWT headers for Layui Table requests
+            parseData: function(res){
+                // Layui table requires code to be 0 for success
+                return {
+                    "code": res.code,
+                    "msg": res.msg || '',
+                    "count": res.count,
+                    "data": res.data
+                };
+            },
+            done: function(res, curr, count){
+                // Initialize select box values if there were previous filter conditions
+                var currentStudentId = this.where ? this.where.student_id : '';
+                var currentCourseId = this.where ? this.where.course_id : '';
+                $('#filterStudent').val(currentStudentId);
+                $('#filterCourse').val(currentCourseId);
+                form.render('select'); // Rerender select component
+            }
+        });
+
+        // Listen for toolbar events
+        table.on('toolbar(gradeTable)', function(obj){ // Changed from courseTable to gradeTable
+                var checkStatus = table.checkStatus(obj.config.id);
+                switch(obj.event){
+                    case 'addGrade': // Corrected event name to addGrade
+                        layer.open({
+                            type: 2,
+                            title: '录入新成绩',
+                            area: ['50%', '60%'],
+                            content: '{{ url_for("admin.add_edit_form", form_type="grade") }}', // Corrected form_type
+                            end: function(){
+                                reloadGradeTable();
+                            }
+                        });
+                    break;
+                case 'batchDelete':
+                    var data = checkStatus.data;
+                    if(data.length === 0){
+                        layer.msg('请选择要删除的成绩记录', {icon: 5});
+                        return;
+                    }
+                    layer.confirm('确定要批量删除这 ' + data.length + ' 条成绩记录吗？', {icon: 3, title:'提示'}, function(index){
+                        var grade_ids = data.map(item => item.id);
+                        fetch('{{ url_for("admin.batch_delete_grades_api_route") }}', { // Corrected endpoint name
+                            method: 'POST',
+                            headers: getAuthHeaders(), // Add JWT headers for fetch requests
+                            body: JSON.stringify({ ids: grade_ids })
+                        })
+                        .then(response => response.json())
+                        .then(res => {
+                            if(res.code === 0){
+                                layer.msg('批量删除成功', {icon: 1});
+                                reloadGradeTable();
+                            } else {
+                                layer.msg(res.msg || '批量删除失败', {icon: 5});
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error (batchDelete):', error);
+                            layer.msg('请求失败', {icon: 5});
+                        });
+                        layer.close(index);
+                    });
+                    break;
+                case 'search':
+                    var studentId = $('#filterStudent').val();
+                    var courseId = $('#filterCourse').val();
+                    reloadGradeTable({
+                        student_id: studentId,
+                        course_id: courseId
+                    });
+                    break;
+            }
+        });
+
+        // Listen for row tool events (edit, delete)
+        table.on('tool(gradeTable)', function(obj){
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if(layEvent === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑成绩信息',
+                    area: ['60%', '80%'],
+                    content: '{{ url_for("admin.add_edit_form", form_type="grade") }}&id=' + data.id, // 指向通用表单，并传递ID
+                    end: function(){
+                        reloadGradeTable();
+                    }
+                });
+            } else if(layEvent === 'del'){
+                layer.confirm('确定要删除这条成绩记录吗？', {icon: 3, title:'提示'}, function(index){
+                    fetch('{{ url_for("admin.delete_grade_api_route", grade_id=0) }}'.replace('0', data.id), { // Changed grade_id="" to grade_id=0 for Flask url_for
+                        method: 'POST',
+                        headers: getAuthHeaders(), // Add JWT headers for fetch requests
+                    })
+                    .then(response => response.json())
+                    .then(res => {
+                        if(res.code === 0){
+                            obj.del();
+                            layer.msg('删除成功', {icon: 1});
+                        } else {
+                            layer.msg(res.msg || '删除失败', {icon: 5});
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error (del):', error);
+                        layer.msg('请求失败', {icon: 5});
+                    });
+                    layer.close(index);
+                });
+            }
+        });
+
+        // Listen for student filter dropdown changes
+        form.on('select(filterStudent)', function(data){
+            // When student or course filter changes, manually trigger search, not auto reload
+            // To avoid refreshing every time a user selects an option
+        });
+
+        // Listen for course filter dropdown changes
+        form.on('select(filterCourse)', function(data){
+            // Same as above
+        });
+
+        $('#reset-btn-grade').on('click', function(){
+            $('#filterStudent').val('');
+            $('#filterCourse').val('');
+            layui.form.render('select');
+            table.reload('gradeTable', {
+                where: {},
+                page: {curr: 1}
+            });
+        });
+    });
+</script>
+{% endblock %}

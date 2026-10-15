@@ -1,0 +1,142 @@
+<view class="analysis-container">
+  <!-- 分析概览 -->
+  <view class="overview-section">
+    <view class="overview-card">
+      <view class="overview-title">成绩分析报告</view>
+      <view class="overview-stats">
+        <view class="overview-stat">
+          <text class="stat-value">{{totalCourses}}</text>
+          <text class="stat-label">总课程</text>
+        </view>
+        <view class="overview-stat">
+          <text class="stat-value">{{averageScore}}</text>
+          <text class="stat-label">平均分</text>
+        </view>
+        <view class="overview-stat">
+          <text class="stat-value">{{bestSubject}}</text>
+          <text class="stat-label">最强科目</text>
+        </view>
+      </view>
+      <view class="stat-info-row">
+        <view class="stat-info-item">
+          <text class="stat-info-label">挂科</text>
+          <text class="stat-info-value">{{failCount}} / {{totalCount}}</text>
+        </view>
+        <view class="stat-info-item">
+          <text class="stat-info-label">学分绩</text>
+          <text class="stat-info-value">{{gpa}}</text>
+        </view>
+        <view class="stat-info-item">
+          <text class="stat-info-label">及格率</text>
+          <text class="stat-info-value">{{passRate}}%</text>
+        </view>
+      </view>
+    </view>
+  </view>
+<ec-canvas id="radar-echarts" canvas-id="radar-echarts" ec="{{ecRadar}}"></ec-canvas>
+  <!-- 雷达图 -->
+  <view class="chart-section">
+    <view class="chart-card">
+      <view class="chart-title">各科成绩雷达图</view>
+      <view class="chart-container">
+        <canvas canvas-id="radarChart" class="chart-canvas" width="260" height="260"></canvas>
+      </view>
+      <view class="radar-legend" wx:if="{{radarCourses && radarCourses.length}}">
+        <view class="radar-legend-item" wx:for="{{radarCourses}}" wx:key="index">
+          <view class="radar-legend-dot" style="background-color: {{radarColors[index % radarColors.length]}}"></view>
+          <text class="radar-legend-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 成绩分布饼图 -->
+  <view class="chart-section">
+    <view class="chart-card">
+      <view class="chart-title">成绩分布分析</view>
+      <view class="chart-container">
+        <canvas canvas-id="pieChart" class="chart-canvas" width="260" height="260"></canvas>
+      </view>
+      <view class="chart-legend">
+        <view class="legend-item" wx:for="{{scoreDistribution}}" wx:key="range">
+          <view class="legend-color" style="background-color: {{item.color}}"></view>
+          <text class="legend-text">{{item.range}}: {{item.count}}门 ({{item.percentage}}%)</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 与班级对比柱状图 -->
+  <view class="chart-section">
+    <view class="chart-card">
+      <view class="chart-title">与班级平均分对比</view>
+      <view class="chart-container">
+        <canvas canvas-id="barChart" class="chart-canvas" width="260" height="260"></canvas>
+      </view>
+      <view class="bar-legend">
+        <view class="bar-legend-item">
+          <view class="bar-legend-color my-score"></view>
+          <text class="bar-legend-text">我的成绩</text>
+        </view>
+        <view class="bar-legend-item">
+          <view class="bar-legend-color class-score"></view>
+          <text class="bar-legend-text">班级平均分</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 综合成绩分析统计模块 -->
+  <view class="stat-section">
+    <view class="stat-card">
+      <view class="stat-title">综合成绩分析</view>
+      <view class="stat-info-list">
+        <view class="stat-info-list-item">
+          <text class="stat-info-list-label">超过班级平均分的课程：</text>
+          <text class="stat-info-list-value">{{aboveCourses || '无'}}</text>
+        </view>
+        <view class="stat-info-list-item">
+          <text class="stat-info-list-label">低于班级平均分的课程：</text>
+          <text class="stat-info-list-value">{{belowCourses || '无'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 成绩趋势 -->
+  <view class="trend-section">
+    <view class="trend-card">
+      <view class="trend-title">成绩趋势分析</view>
+      <view class="trend-content">
+        <view class="trend-item" wx:for="{{trendAnalysis}}" wx:key="type">
+          <view class="trend-icon {{item.type}}">{{item.icon}}</view>
+          <view class="trend-info">
+            <text class="trend-label">{{item.label}}</text>
+            <text class="trend-desc">{{item.description}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 学习建议 -->
+  <view class="suggestion-section">
+    <view class="suggestion-card">
+      <view class="suggestion-title">学习建议</view>
+      <view class="suggestion-list">
+        <view class="suggestion-item" wx:for="{{suggestions}}" wx:key="index">
+          <text class="suggestion-number">{{index + 1}}</text>
+          <text class="suggestion-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载提示 -->
+  <view class="loading-mask" wx:if="{{isLoading}}">
+    <view class="loading-content">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">分析中...</text>
+    </view>
+  </view>
+</view> 

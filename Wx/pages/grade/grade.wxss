@@ -1,0 +1,234 @@
+.grade-page {
+  padding: 32rpx;
+  font-size: 32rpx;
+  color: #333;
+}
+
+.grade-container {
+  min-height: 100vh;
+  background: #eafaf1;
+  padding-bottom: 120rpx;
+}
+
+/* 统计卡片区域 */
+.stats-section {
+  display: flex;
+  padding: 30rpx 20rpx;
+  background: rgba(79, 157, 166, 0.12);
+  margin-bottom: 20rpx;
+  border-radius: 16rpx;
+}
+
+.stat-card {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 10rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(79,157,166,0.06);
+}
+
+.stat-number {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #4f9da6;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 搜索筛选区域 */
+.filter-section {
+  background: #ffffff;
+  padding: 30rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.search-box {
+  margin-bottom: 20rpx;
+}
+
+.search-input {
+  width: 100%;
+  height: 72rpx;
+  background: #f8f8f8;
+  border-radius: 36rpx;
+  padding: 0 30rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.filter-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+.filter-picker {
+  flex: 1;
+  height: 72rpx;
+  background: #f8f8f8;
+  border-radius: 36rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 30rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 成绩列表区域 */
+.grade-list {
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(79,157,166,0.06);
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.header-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4f9da6;
+}
+
+.header-count {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.grade-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.grade-item:last-child {
+  border-bottom: none;
+}
+
+.course-info {
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.course-name {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.course-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.course-type, .course-credits, .teacher-name {
+  background: rgba(79, 157, 166, 0.08);
+  color: #4f9da6;
+  font-size: 24rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.score-section {
+  display: flex;
+  align-items: baseline;
+}
+
+.score {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin-right: 8rpx;
+}
+
+.score.excellent, .score.good {
+  color: #4f9da6;
+}
+
+.score.pass {
+  color: #b2bec3;
+}
+
+.score.fail {
+  color: #ff4d4f;
+}
+
+.score-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 20rpx;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 加载遮罩 */
+.loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-content {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 60rpx 40rpx;
+  text-align: center;
+  min-width: 300rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #007aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #333;
+} 
